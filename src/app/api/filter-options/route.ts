@@ -8,7 +8,9 @@ export async function GET() {
     const [branchRes, genderRes, tierRes, categoryRes] = await Promise.all([
       pool.query(`SELECT DISTINCT gudang_branch AS val FROM core.stock_with_product WHERE gudang_branch IS NOT NULL ORDER BY 1`),
       pool.query(`SELECT DISTINCT
-        CASE WHEN gender IN ('Baby','Boys','Girls','Junior') THEN 'Baby & Kids'
+        CASE WHEN UPPER(gender) IN ('BABY','BOYS','GIRLS','JUNIOR','KIDS') THEN 'Baby & Kids'
+             WHEN UPPER(gender) = 'MEN' THEN 'Men'
+             WHEN UPPER(gender) = 'LADIES' THEN 'Ladies'
              ELSE COALESCE(gender, 'Unknown') END AS val
         FROM core.stock_with_product ORDER BY 1`),
       pool.query(`SELECT DISTINCT COALESCE(tier, '3') AS val FROM core.stock_with_product ORDER BY 1`),

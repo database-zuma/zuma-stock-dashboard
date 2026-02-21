@@ -10,7 +10,9 @@ export async function GET(req: NextRequest) {
 
   const sql = `
     SELECT
-      CASE WHEN gender IN ('Baby','Boys','Girls','Junior') THEN 'Baby & Kids'
+      CASE WHEN UPPER(gender) IN ('BABY','BOYS','GIRLS','JUNIOR','KIDS') THEN 'Baby & Kids'
+           WHEN UPPER(gender) = 'MEN' THEN 'Men'
+           WHEN UPPER(gender) = 'LADIES' THEN 'Ladies'
            ELSE COALESCE(gender, 'Unknown') END AS gender_group,
       SUM(quantity) AS pairs
     FROM core.stock_with_product

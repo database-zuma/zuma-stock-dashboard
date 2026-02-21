@@ -41,10 +41,10 @@ export function buildWhereClause(filters: FilterParams): {
   if (filters.gender) {
     if (filters.gender === "Baby & Kids") {
       conditions.push(
-        `gender IN ('Baby','Boys','Girls','Junior')`
+        `UPPER(gender) IN ('BABY','BOYS','GIRLS','JUNIOR','KIDS')`
       );
     } else {
-      conditions.push(`gender = $${paramIndex}`);
+      conditions.push(`UPPER(gender) = UPPER($${paramIndex})`);
       values.push(filters.gender);
       paramIndex++;
     }

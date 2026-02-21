@@ -15,7 +15,9 @@ export async function GET(req: NextRequest) {
       kode_mix,
       COALESCE(article, nama_gudang) AS article,
       series,
-      CASE WHEN gender IN ('Baby','Boys','Girls','Junior') THEN 'Baby & Kids'
+      CASE WHEN UPPER(gender) IN ('BABY','BOYS','GIRLS','JUNIOR','KIDS') THEN 'Baby & Kids'
+           WHEN UPPER(gender) = 'MEN' THEN 'Men'
+           WHEN UPPER(gender) = 'LADIES' THEN 'Ladies'
            ELSE COALESCE(gender, 'Unknown') END AS gender_group,
       COALESCE(gudang_branch, 'Warehouse') AS branch,
       COALESCE(tier, '3') AS tier,
