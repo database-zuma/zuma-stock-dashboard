@@ -1,70 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { parseFilters, buildWhereClause, nextParamIndex } from "@/lib/filters";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
+
+function buildWhere(sp: URLSearchParams): { clause: string; values: string[] } {
+  const conds: string[] = [];
+  const vals: string[] = [];
+  let i = 1;
+  const branch   = sp.get("branch");
+  const gender   = sp.get("gender");
+  const tier     = sp.get("tier");
+  const category = sp.get("category");
+  if (branch)   { conds.push(`branch = $${i++}`);       vals.push(branch); }
+  if (gender)   { conds.push(`gender_group = $${i++}`); vals.push(gender); }
+  if (tier)     { conds.push(`tier = $${i++}`);         vals.push(tier); }
+  if (category) { conds.push(`category = $${i++}`);     vals.push(category); }
+  return { clause: conds.length ? "WHERE " + conds.join(" AND ") : "", values: vals };
+}
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
-  const filters = parseFilters(sp);
-  const { clause, values } = buildWhereClause(filters);
-
-  const page = Math.max(1, Number(sp.get("page")) || 1);
-  const limit = Math.min(100, Math.max(1, Number(sp.get("limit")) || 20));
+  const { clause, values } = buildWhere(sp);
+  const page   = Math.max(1, Number(sp.get("page"))  || 1);
+  const limit  = Math.min(100, Math.max(1, Number(sp.get("limit")) || 20));
   const offset = (page - 1) * limit;
-
-  let idx = nextParamIndex(filters);
-  const limitParam = `$${idx}`;
-  idx++;
-  const offsetParam = `$${idx}`;
+  const i      = values.length + 1;
 
   const dataSql = `
-    SELECT
-      kode_mix,
-      COALESCE(article, '') AS article,
-      series,
-      CASE WHEN UPPER(gender) IN ('BABY','BOYS','GIRLS','JUNIOR','KIDS') THEN 'Baby & Kids'
-           WHEN UPPER(gender) = 'MEN' THEN 'Men'
-           WHEN UPPER(gender) = 'LADIES' THEN 'Ladies'
-           ELSE COALESCE(gender, 'Unknown') END AS gender_group,
-      tipe,
-      COALESCE(tier, '3') AS tier,
-      COALESCE(gudang_branch, 'Warehouse') AS branch,
-      nama_gudang,
-      SUM(quantity) AS pairs,
-      SUM(quantity * COALESCE(rsp, 0)) AS est_rsp_value
-    FROM core.stock_with_product
+    SELECT kode_mix, article, series, gender_group, tipe, tier, branch, nama_gudang,
+           SUM(pairs) AS pairs, SUM(est_rsp) AS est_rsp_value
+    FROM core.dashboard_cache
     ${clause}
-    GROUP BY kode_mix, article, series, gender, tipe, tier, gudang_branch, nama_gudang
-    ORDER BY SUM(quantity) DESC
-    LIMIT ${limitParam} OFFSET ${offsetParam}
+    GROUP BY kode_mix, article, series, gender_group, tipe, tier, branch, nama_gudang
+    ORDER BY pairs DESC
+    LIMIT $${i} OFFSET $${i + 1}
   `;
 
-  // Use a lightweight count: count distinct (kode_mix, tipe, tier, gudang_branch) combos
-  // This is much faster than subquery GROUP BY on all columns
-  const countSql = `
-    SELECT COUNT(DISTINCT (kode_mix, COALESCE(tipe,''), COALESCE(tier,''), COALESCE(gudang_branch,''))) AS total
-    FROM core.stock_with_product
-    ${clause}
-  `;
+  const countSql = `SELECT COUNT(*) AS total FROM core.dashboard_cache ${clause}`;
 
   try {
     const [dataRes, countRes] = await Promise.all([
       pool.query(dataSql, [...values, limit, offset]),
       pool.query(countSql, values),
     ]);
-
     return NextResponse.json({
       rows: dataRes.rows.map((r) => ({
-        kode_mix: r.kode_mix,
-        article: r.article,
-        series: r.series,
-        gender_group: r.gender_group,
-        tipe: r.tipe,
-        tier: r.tier,
-        branch: r.branch,
-        nama_gudang: r.nama_gudang,
-        pairs: Number(r.pairs),
+        kode_mix:      r.kode_mix,
+        article:       r.article,
+        series:        r.series,
+        gender_group:  r.gender_group,
+        tipe:          r.tipe,
+        tier:          r.tier,
+        branch:        r.branch,
+        nama_gudang:   r.nama_gudang,
+        pairs:         Number(r.pairs),
         est_rsp_value: Number(r.est_rsp_value),
       })),
       total: Number(countRes.rows[0].total),
@@ -73,6 +63,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (e) {
     console.error("stock-table error:", e);
-    return NextResponse.json({ rows: [], total: 0, page, limit }, { status: 200 });
+    return NextResponse.json({ rows: [], total: 0, page, limit });
   }
 }

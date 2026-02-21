@@ -3,6 +3,7 @@ import pool from "@/lib/db";
 import { parseFilters, buildWhereClause } from "@/lib/filters";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export async function GET(req: NextRequest) {
   const filters = parseFilters(req.nextUrl.searchParams);

@@ -2,19 +2,15 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export async function GET() {
   try {
     const [branchRes, genderRes, tierRes, categoryRes] = await Promise.all([
-      pool.query(`SELECT DISTINCT gudang_branch AS val FROM core.stock_with_product WHERE gudang_branch IS NOT NULL ORDER BY 1`),
-      pool.query(`SELECT DISTINCT
-        CASE WHEN UPPER(gender) IN ('BABY','BOYS','GIRLS','JUNIOR','KIDS') THEN 'Baby & Kids'
-             WHEN UPPER(gender) = 'MEN' THEN 'Men'
-             WHEN UPPER(gender) = 'LADIES' THEN 'Ladies'
-             ELSE COALESCE(gender, 'Unknown') END AS val
-        FROM core.stock_with_product ORDER BY 1`),
-      pool.query(`SELECT DISTINCT COALESCE(tier, '3') AS val FROM core.stock_with_product ORDER BY 1`),
-      pool.query(`SELECT DISTINCT gudang_category AS val FROM core.stock_with_product WHERE gudang_category IS NOT NULL ORDER BY 1`),
+      pool.query(`SELECT DISTINCT branch AS val FROM core.dashboard_cache WHERE branch IS NOT NULL ORDER BY 1`),
+      pool.query(`SELECT DISTINCT gender_group AS val FROM core.dashboard_cache WHERE gender_group IS NOT NULL ORDER BY 1`),
+      pool.query(`SELECT DISTINCT tier AS val FROM core.dashboard_cache ORDER BY 1`),
+      pool.query(`SELECT DISTINCT category AS val FROM core.dashboard_cache WHERE category IS NOT NULL ORDER BY 1`),
     ]);
 
     return NextResponse.json({

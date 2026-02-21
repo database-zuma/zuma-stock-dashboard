@@ -44,11 +44,18 @@ function DashboardContent() {
     setKpis(null); setBranchData(null); setGenderData(null);
     setTierData(null); setSeriesData(null); setDeadStock(null);
 
-    fetch(`/api/kpis${base}`).then(r => r.json()).then(d => d && !d.error && setKpis(d)).catch(() => {});
-    fetch(`/api/by-branch${base}`).then(r => r.json()).then(d => Array.isArray(d) && setBranchData(d)).catch(() => {});
-    fetch(`/api/by-gender${base}`).then(r => r.json()).then(d => Array.isArray(d) && setGenderData(d)).catch(() => {});
-    fetch(`/api/by-tier${base}`).then(r => r.json()).then(d => Array.isArray(d) && setTierData(d)).catch(() => {});
-    fetch(`/api/by-series${base}`).then(r => r.json()).then(d => Array.isArray(d) && setSeriesData(d)).catch(() => {});
+    fetch(`/api/dashboard${base}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!d || d.error) return;
+        if (d.kpis) setKpis(d.kpis);
+        if (Array.isArray(d.by_branch)) setBranchData(d.by_branch);
+        if (Array.isArray(d.by_gender)) setGenderData(d.by_gender);
+        if (Array.isArray(d.by_tier)) setTierData(d.by_tier);
+        if (Array.isArray(d.by_series)) setSeriesData(d.by_series);
+      })
+      .catch(() => {});
+
     fetch(`/api/dead-stock${base}`).then(r => r.json()).then(d => Array.isArray(d) && setDeadStock(d)).catch(() => {});
   }, [qs]);
 
