@@ -11,7 +11,7 @@ interface GenderRow {
 }
 
 const GENDER_MONO: Record<string, string> = {
-  Men: "#E8630A",
+  Men: "#00E273",
   Ladies: "#1A1A18",
   "Baby & Kids": "#5D625A",
   Unknown: "#A9A69F",

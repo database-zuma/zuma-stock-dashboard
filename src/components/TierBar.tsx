@@ -14,7 +14,7 @@ interface TierRow {
 const TIER_ORDER = ["1", "2", "3", "4", "5", "8"];
 
 const MONO_TIER: Record<string, string> = {
-  "1": "#E8630A",
+  "1": "#00E273",
   "2": "#1A1A18",
   "3": "#5D625A",
   "4": "#A9A69F",

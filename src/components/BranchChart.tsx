@@ -22,7 +22,7 @@ const TIER_NAMES: Record<string, string> = {
 };
 
 const MONO_TIER: Record<string, string> = {
-  "1": "#E8630A",
+  "1": "#00E273",
   "2": "#1A1A18",
   "3": "#5D625A",
   "4": "#A9A69F",

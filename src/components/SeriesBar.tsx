@@ -13,27 +13,27 @@ interface SeriesRow {
 
 export default function SeriesBar({ data }: { data: SeriesRow[] }) {
   const reversed = [...data].reverse();
-  const len = reversed.length || 1;
+  const lastIdx = reversed.length - 1;
 
   return (
     <div style={{ position: "relative", height: Math.max(350, data.length * 28) }}>
       <Bar
         data={{
-           labels: reversed.map((d) => d.series),
-           datasets: [
-             {
-               data: reversed.map((d) => d.pairs),
-                 backgroundColor: reversed.map((_, i) => {
-                    if (i === 0) return "#E8630A";
-                    const warmGrays = ["#1A1A18", "#3D3D39", "#5F5F5A", "#818179", "#A3A39E", "#C5C5C0", "#E8E8E5"];
-                    return warmGrays[Math.min(i - 1, warmGrays.length - 1)];
-                  }),
-               borderRadius: 3,
-               borderSkipped: false,
-               maxBarThickness: 24,
-             },
-           ],
-         }}
+          labels: reversed.map((d) => d.series),
+          datasets: [
+            {
+              data: reversed.map((d) => d.pairs),
+              backgroundColor: reversed.map((_, i) => {
+                if (i === lastIdx) return "#00E273";
+                const warmGrays = ["#E8E8E5", "#C5C5C0", "#A3A39E", "#818179", "#5F5F5A", "#3D3D39", "#1A1A18"];
+                return warmGrays[Math.min(lastIdx - i - 1, warmGrays.length - 1)];
+              }),
+              borderRadius: 3,
+              borderSkipped: false,
+              maxBarThickness: 24,
+            },
+          ],
+        }}
         options={{
           indexAxis: "y",
           responsive: true,
@@ -41,12 +41,12 @@ export default function SeriesBar({ data }: { data: SeriesRow[] }) {
           plugins: {
             legend: { display: false },
             tooltip: {
-               backgroundColor: "#FFFFFF",
-               borderColor: "rgba(0,0,0,0.08)",
-               borderWidth: 1,
-               titleColor: "#1A1A18",
-               bodyColor: "#1A1A18",
-               padding: 10,
+              backgroundColor: "#FFFFFF",
+              borderColor: "rgba(0,0,0,0.08)",
+              borderWidth: 1,
+              titleColor: "#1A1A18",
+              bodyColor: "#1A1A18",
+              padding: 10,
               callbacks: {
                 label: (ctx) => {
                   const row = reversed[ctx.dataIndex];
