@@ -14,7 +14,7 @@ export default function SeriesBar({ data }: { data: SeriesRow[] }) {
   const reversed = [...data].reverse();
 
   return (
-    <div className="h-full w-full" style={{ minHeight: Math.max(300, data.length * 28) }}>
+    <div style={{ position: "relative", height: Math.max(350, data.length * 28) }}>
       <Bar
         data={{
           labels: reversed.map((d) => d.series),

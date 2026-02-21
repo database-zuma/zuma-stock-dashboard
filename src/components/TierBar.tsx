@@ -18,7 +18,7 @@ export default function TierBar({ data }: { data: TierRow[] }) {
   );
 
   return (
-    <div className="h-full w-full" style={{ minHeight: 220 }}>
+    <div style={{ position: "relative", height: 220 }}>
       <Bar
         data={{
           labels: sorted.map((d) => `T${d.tier}`),

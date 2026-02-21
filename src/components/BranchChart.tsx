@@ -41,8 +41,10 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
     borderSkipped: false as const,
   }));
 
+  const chartHeight = Math.max(280, branches.length * 40);
+
   return (
-    <div className="h-full w-full" style={{ minHeight: 280 }}>
+    <div style={{ position: "relative", height: chartHeight }}>
       <Bar
         data={{ labels: branches, datasets }}
         options={{
