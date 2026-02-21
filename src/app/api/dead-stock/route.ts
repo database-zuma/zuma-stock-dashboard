@@ -21,11 +21,11 @@ export async function GET(req: NextRequest) {
   const { clause, values } = buildWhere(req.nextUrl.searchParams);
 
   const sql = `
-    SELECT kode_mix, series, gender_group, branch, tier,
+    SELECT kode_mix, article, series, gender_group, branch, tier,
            SUM(pairs) AS pairs, SUM(est_rsp) AS est_rsp_value
     FROM core.dashboard_cache
     ${clause}
-    GROUP BY kode_mix, series, gender_group, branch, tier
+    GROUP BY kode_mix, article, series, gender_group, branch, tier
     ORDER BY pairs DESC
     LIMIT 100
   `;
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     const { rows } = await pool.query(sql, values);
     return NextResponse.json(rows.map((r) => ({
       kode_mix:      r.kode_mix,
-      article:       r.kode_mix,
+      article:       r.article,
       series:        r.series,
       gender_group:  r.gender_group,
       branch:        r.branch,

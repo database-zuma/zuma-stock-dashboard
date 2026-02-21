@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     LIMIT $${i} OFFSET $${i + 1}
   `;
 
-  const countSql = `SELECT COUNT(*) AS total FROM core.dashboard_cache ${clause}`;
+  const countSql = `SELECT COUNT(*) AS total FROM (SELECT 1 FROM core.dashboard_cache ${clause} GROUP BY kode_mix, article, series, gender_group, tipe, tier, branch, nama_gudang) sub`;
 
   try {
     const [dataRes, countRes] = await Promise.all([
