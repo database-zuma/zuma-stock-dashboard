@@ -44,12 +44,12 @@ function DashboardContent() {
     setKpis(null); setBranchData(null); setGenderData(null);
     setTierData(null); setSeriesData(null); setDeadStock(null);
 
-    fetch(`/api/kpis${base}`).then(r => r.json()).then(setKpis).catch(() => {});
-    fetch(`/api/by-branch${base}`).then(r => r.json()).then(setBranchData).catch(() => {});
-    fetch(`/api/by-gender${base}`).then(r => r.json()).then(setGenderData).catch(() => {});
-    fetch(`/api/by-tier${base}`).then(r => r.json()).then(setTierData).catch(() => {});
-    fetch(`/api/by-series${base}`).then(r => r.json()).then(setSeriesData).catch(() => {});
-    fetch(`/api/dead-stock${base}`).then(r => r.json()).then(setDeadStock).catch(() => {});
+    fetch(`/api/kpis${base}`).then(r => r.json()).then(d => d && !d.error && setKpis(d)).catch(() => {});
+    fetch(`/api/by-branch${base}`).then(r => r.json()).then(d => Array.isArray(d) && setBranchData(d)).catch(() => {});
+    fetch(`/api/by-gender${base}`).then(r => r.json()).then(d => Array.isArray(d) && setGenderData(d)).catch(() => {});
+    fetch(`/api/by-tier${base}`).then(r => r.json()).then(d => Array.isArray(d) && setTierData(d)).catch(() => {});
+    fetch(`/api/by-series${base}`).then(r => r.json()).then(d => Array.isArray(d) && setSeriesData(d)).catch(() => {});
+    fetch(`/api/dead-stock${base}`).then(r => r.json()).then(d => Array.isArray(d) && setDeadStock(d)).catch(() => {});
   }, [qs]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);

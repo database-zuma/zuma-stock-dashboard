@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -7,19 +9,7 @@ import {
   Tooltip,
   Legend,
   Title,
-  type Plugin,
 } from "chart.js";
-
-const darkBgPlugin: Plugin = {
-  id: "darkBackground",
-  beforeDraw: (chart) => {
-    const { ctx } = chart;
-    ctx.save();
-    ctx.fillStyle = "transparent";
-    ctx.fillRect(0, 0, chart.width, chart.height);
-    ctx.restore();
-  },
-};
 
 ChartJS.register(
   CategoryScale,
@@ -28,8 +18,7 @@ ChartJS.register(
   ArcElement,
   Tooltip,
   Legend,
-  Title,
-  darkBgPlugin
+  Title
 );
 
 ChartJS.defaults.color = "#8CA3AD";
