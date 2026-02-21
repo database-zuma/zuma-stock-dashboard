@@ -7,21 +7,30 @@ import KPICard, { KPISkeleton } from "@/components/KPICard";
 import BranchChart, { BranchChartSkeleton } from "@/components/BranchChart";
 import TipeDonut, { TipeDonutSkeleton } from "@/components/GenderDonut";
 import TierBar, { TierBarSkeleton } from "@/components/TierBar";
+import SizeChart, { SizeChartSkeleton } from "@/components/SizeChart";
+import TierCompositionChart, { TierCompositionSkeleton } from "@/components/TierCompositionChart";
 import StockTable from "@/components/StockTable";
+import ControlStockFilterBar, { type CSFilters } from "@/components/ControlStockFilterBar";
+import ControlStockTable from "@/components/ControlStockTable";
 import { fmtPairs, fmtRupiah } from "@/lib/format";
 
 interface KPIData {
-  total_pairs: number;
-  unique_articles: number;
+  total_pairs:      number;
+  unique_articles:  number;
   dead_stock_pairs: number;
-  est_rsp_value: number;
-  snapshot_date: string;
+  est_rsp_value:    number;
+  snapshot_date:    string;
 }
 interface BranchRow { branch: string; gender_group: string; pairs: number }
 interface TipeRow   { tipe: string; pairs: number }
 interface TierRow   { tier: string; pairs: number; articles: number }
+interface SizeRow   { ukuran: string; pairs: number }
 
-type Tab = "overview" | "stock";
+type Tab = "overview" | "stock" | "control";
+
+const DEFAULT_CS_FILTERS: CSFilters = {
+  gender: [], series: [], color: [], tipe: [], tier: [], size: [], q: "",
+};
 
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -32,24 +41,34 @@ function DashboardContent() {
   const [branchData, setBranchData] = useState<BranchRow[] | null>(null);
   const [tipeData,   setTipeData]   = useState<TipeRow[] | null>(null);
   const [tierData,   setTierData]   = useState<TierRow[] | null>(null);
+  const [sizeData,   setSizeData]   = useState<SizeRow[] | null>(null);
+
+  const [csFilters, setCsFilters] = useState<CSFilters>(DEFAULT_CS_FILTERS);
 
   const fetchAll = useCallback(() => {
     const base = qs ? `?${qs}` : "";
-    setKpis(null); setBranchData(null); setTipeData(null); setTierData(null);
+    setKpis(null); setBranchData(null); setTipeData(null); setTierData(null); setSizeData(null);
 
     fetch(`/api/dashboard${base}`)
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         if (!d || d.error) return;
-        if (d.kpis)                  setKpis(d.kpis);
+        if (d.kpis)                   setKpis(d.kpis);
         if (Array.isArray(d.by_branch)) setBranchData(d.by_branch);
         if (Array.isArray(d.by_tipe))   setTipeData(d.by_tipe);
         if (Array.isArray(d.by_tier))   setTierData(d.by_tier);
+        if (Array.isArray(d.by_size))   setSizeData(d.by_size);
       })
       .catch(() => {});
   }, [qs]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const tabLabel: Record<Tab, string> = {
+    overview: "Overview",
+    stock:    "Stock Detail",
+    control:  "Control Stock",
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-12">
@@ -70,12 +89,13 @@ function DashboardContent() {
               </p>
             </div>
           </div>
-          <FilterBar />
+          {activeTab !== "control" && <FilterBar />}
         </div>
 
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 flex gap-0">
-          {(["overview", "stock"] as Tab[]).map((tab) => (
-            <button type="button"
+          {(["overview", "stock", "control"] as Tab[]).map((tab) => (
+            <button
+              type="button"
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
@@ -84,7 +104,7 @@ function DashboardContent() {
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {tab === "overview" ? "Overview" : "Stock Detail"}
+              {tabLabel[tab]}
             </button>
           ))}
         </div>
@@ -99,50 +119,96 @@ function DashboardContent() {
                   <KPICard
                     title="Total Pairs" value={kpis.total_pairs} formatter={fmtPairs}
                     subtitle="All locations" accent
-                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>}
+                    icon={
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                    }
                   />
                   <KPICard
                     title="Active Articles" value={kpis.unique_articles} formatter={fmtPairs}
-                    subtitle="Unique articles"
-                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>}
+                    subtitle="Distinct kode_besar with stock"
+                    icon={
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+                      </svg>
+                    }
                   />
                   <KPICard
                     title="Dead Stock" value={kpis.dead_stock_pairs} formatter={fmtPairs}
                     subtitle="T4+T5 pairs"
-                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>}
+                    icon={
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                    }
                   />
                   <KPICard
                     title="Est. RSP Value" value={kpis.est_rsp_value} formatter={fmtRupiah}
                     subtitle="Retail selling price"
-                    icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></svg>}
+                    icon={
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <line x1="12" y1="1" x2="12" y2="23" />
+                        <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                      </svg>
+                    }
                   />
                 </>
               ) : (
-                [...Array(4)].map((_, i) => <KPISkeleton key={i} />)
+                Array.from({ length: 4 }).map((_, i) => <KPISkeleton key={`kpi-skel-${i}`} />)
               )}
             </section>
 
             <section className="grid grid-cols-1 lg:grid-cols-5 gap-4">
               <div className="lg:col-span-3 rounded-xl border border-border bg-card p-4">
-                <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">Stock by Branch &amp; Gender</h3>
+                <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
+                  Stock by Branch &amp; Gender
+                </h3>
                 {branchData ? <BranchChart data={branchData} /> : <BranchChartSkeleton />}
               </div>
               <div className="lg:col-span-2 grid grid-rows-2 gap-4">
                 <div className="rounded-xl border border-border bg-card p-4">
-                  <h3 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wider">Tipe Composition</h3>
+                  <h3 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wider">
+                    Tipe Composition
+                  </h3>
                   {tipeData ? <TipeDonut data={tipeData} /> : <TipeDonutSkeleton />}
                 </div>
                 <div className="rounded-xl border border-border bg-card p-4">
-                  <h3 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wider">Tier Distribution</h3>
+                  <h3 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wider">
+                    Tier Distribution
+                  </h3>
                   {tierData ? <TierBar data={tierData} /> : <TierBarSkeleton />}
                 </div>
               </div>
             </section>
+
+            <section className="rounded-xl border border-border bg-card p-4">
+              <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
+                Size Distribution
+              </h3>
+              {sizeData ? <SizeChart data={sizeData} /> : <SizeChartSkeleton />}
+            </section>
+
+            <section className="rounded-xl border border-border bg-card p-4">
+              <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
+                Tier Compositions %
+              </h3>
+              {tierData ? <TierCompositionChart data={tierData} /> : <TierCompositionSkeleton />}
+            </section>
           </div>
         )}
 
-        {activeTab === "stock" && (
-          <StockTable />
+        {activeTab === "stock" && <StockTable />}
+
+        {activeTab === "control" && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <ControlStockFilterBar filters={csFilters} onChange={setCsFilters} />
+            </div>
+            <ControlStockTable filters={csFilters} />
+          </div>
         )}
       </main>
     </div>
@@ -151,7 +217,11 @@ function DashboardContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="text-muted-foreground">Loading dashboard...</div></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading dashboard...</div>
+      </div>
+    }>
       <DashboardContent />
     </Suspense>
   );

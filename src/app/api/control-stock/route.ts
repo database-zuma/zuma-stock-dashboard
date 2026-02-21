@@ -27,19 +27,17 @@ function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } 
     }
   };
 
-  addFilter("category",     parseMulti(sp, "category"));
-  addFilter("branch",       parseMulti(sp, "branch"));
-  addFilter("nama_gudang",  parseMulti(sp, "gudang"));
-  addFilter("gender_group", parseMulti(sp, "gender"));
-  addFilter("series",       parseMulti(sp, "series"));
-  addFilter("group_warna",  parseMulti(sp, "color"));
-  addFilter("tier",         parseMulti(sp, "tier"));
-  addFilter("ukuran",       parseMulti(sp, "size"));
+  addFilter("gender", parseMulti(sp, "gender"));
+  addFilter("series", parseMulti(sp, "series"));
+  addFilter("color",  parseMulti(sp, "color"));
+  addFilter("tipe",   parseMulti(sp, "tipe"));
+  addFilter("tier",   parseMulti(sp, "tier"));
+  addFilter("size",   parseMulti(sp, "size"));
 
   const q = sp.get("q");
   if (q) {
     const like = `%${q}%`;
-    conds.push(`(kode_besar ILIKE $${i} OR kode ILIKE $${i} OR article ILIKE $${i})`);
+    conds.push(`(kode_besar ILIKE $${i} OR kode_kecil ILIKE $${i} OR kodemix ILIKE $${i})`);
     vals.push(like);
     i++;
   }
@@ -57,25 +55,19 @@ export async function GET(req: NextRequest) {
 
   const dataSql = `
     SELECT
-      kode_besar, kode, article, series, gender_group, tipe, tier,
-      branch, nama_gudang, group_warna, ukuran,
-      SUM(pairs)    AS pairs,
-      SUM(est_rsp)  AS est_rsp_value
-    FROM core.dashboard_cache
+      kode_besar, kode_kecil, kodemix, gender, series, color, tipe, tier, size,
+      stok_global, wh_pusat, wh_bali, wh_jkt, stok_toko, stok_online,
+      avg_last_3_months, to_wh, to_total,
+      current_year_qty, last_year_qty,
+      updated_at
+    FROM mart.sku_portfolio_size
     ${clause}
-    GROUP BY kode_besar, kode, article, series, gender_group, tipe, tier,
-             branch, nama_gudang, group_warna, ukuran
-    ORDER BY pairs DESC
+    ORDER BY stok_global DESC NULLS LAST
     LIMIT $${n} OFFSET $${n + 1}
   `;
 
   const countSql = `
-    SELECT COUNT(*) AS total FROM (
-      SELECT 1 FROM core.dashboard_cache
-      ${clause}
-      GROUP BY kode_besar, kode, article, series, gender_group, tipe, tier,
-               branch, nama_gudang, group_warna, ukuran
-    ) sub
+    SELECT COUNT(*) AS total FROM mart.sku_portfolio_size ${clause}
   `;
 
   try {
@@ -85,26 +77,34 @@ export async function GET(req: NextRequest) {
     ]);
     return NextResponse.json({
       rows: dataRes.rows.map((r) => ({
-        kode_besar:    r.kode_besar,
-        kode:          r.kode,
-        article:       r.article,
-        series:        r.series,
-        gender_group:  r.gender_group,
-        tipe:          r.tipe,
-        tier:          r.tier,
-        branch:        r.branch,
-        nama_gudang:   r.nama_gudang,
-        group_warna:   r.group_warna,
-        ukuran:        r.ukuran,
-        pairs:         Number(r.pairs),
-        est_rsp_value: Number(r.est_rsp_value),
+        kode_besar:        r.kode_besar,
+        kode_kecil:        r.kode_kecil,
+        kodemix:           r.kodemix,
+        gender:            r.gender,
+        series:            r.series,
+        color:             r.color,
+        tipe:              r.tipe,
+        tier:              r.tier,
+        size:              r.size,
+        stok_global:       Number(r.stok_global)       || 0,
+        wh_pusat:          Number(r.wh_pusat)          || 0,
+        wh_bali:           Number(r.wh_bali)           || 0,
+        wh_jkt:            Number(r.wh_jkt)            || 0,
+        stok_toko:         Number(r.stok_toko)         || 0,
+        stok_online:       Number(r.stok_online)       || 0,
+        avg_last_3_months: Number(r.avg_last_3_months) || 0,
+        to_wh:             r.to_wh    != null ? Number(r.to_wh)    : null,
+        to_total:          r.to_total != null ? Number(r.to_total) : null,
+        current_year_qty:  Number(r.current_year_qty)  || 0,
+        last_year_qty:     Number(r.last_year_qty)     || 0,
+        updated_at:        r.updated_at,
       })),
       total: Number(countRes.rows[0].total),
       page,
       limit,
     });
   } catch (e) {
-    console.error("stock-table error:", e);
+    console.error("control-stock error:", e);
     return NextResponse.json({ rows: [], total: 0, page, limit });
   }
 }

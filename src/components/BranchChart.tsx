@@ -14,7 +14,7 @@ const GENDER_ORDER = ["Men", "Ladies", "Baby & Kids", "Unknown"];
 
 const GENDER_COLORS: Record<string, string> = {
   "Men":         "#00E273",
-  "Ladies":      "#1A1A18",
+  "Ladies":      "#E8266A",
   "Baby & Kids": "#5D625A",
   "Unknown":     "#C8C5BE",
 };
@@ -45,7 +45,7 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
     borderSkipped: false as const,
   }));
 
-  const chartHeight = Math.max(280, branches.length * 40);
+  const chartHeight = Math.max(320, branches.length * 42);
 
   return (
     <div style={{ position: "relative", height: chartHeight }}>
@@ -98,9 +98,9 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
 
 export function BranchChartSkeleton() {
   return (
-    <div className="flex flex-col gap-3 p-4" style={{ minHeight: 280 }}>
-      {[...Array(6)].map((_, i) => (
-        <Skeleton key={`bcs-${i}`} className="h-6" style={{ width: `${80 - i * 8}%` }} />
+    <div className="flex flex-col gap-3 p-4" style={{ minHeight: 320 }}>
+      {[...Array(8)].map((_, i) => (
+        <Skeleton key={`bcs-${i}`} className="h-6" style={{ width: `${85 - i * 7}%` }} />
       ))}
     </div>
   );

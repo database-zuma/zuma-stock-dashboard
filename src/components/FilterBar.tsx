@@ -1,15 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useCallback, useRef } from "react";
-import { Search, X } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { Search, X, ChevronDown, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface Options {
@@ -23,15 +16,130 @@ interface Options {
   sizes:      string[];
 }
 
-const ALL = "__all__";
-const FILTER_KEYS = ["category", "branch", "gudang", "gender", "series", "color", "tier", "size", "q"] as const;
+interface AutocompleteItem { kode: string; article: string; }
 
+const FILTER_KEYS = ["category","branch","gudang","gender","series","color","tier","size","q"] as const;
+
+// ─── MultiSelect ────────────────────────────────────────────────────────────
+function MultiSelect({
+  label,
+  paramKey,
+  options,
+  renderOption,
+}: {
+  label: string;
+  paramKey: string;
+  options: string[];
+  renderOption?: (v: string) => string;
+}) {
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const selected = useMemo(() => {
+    const val = searchParams.get(paramKey);
+    return val ? val.split(",").map((v) => v.trim()).filter(Boolean) : [];
+  }, [searchParams, paramKey]);
+
+  const toggleOption = useCallback(
+    (opt: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const next = selected.includes(opt)
+        ? selected.filter((v) => v !== opt)
+        : [...selected, opt];
+      if (next.length === 0) params.delete(paramKey);
+      else params.set(paramKey, next.join(","));
+      params.delete("page");
+      router.push(`/?${params.toString()}`);
+    },
+    [router, searchParams, selected, paramKey]
+  );
+
+  const clearFilter = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(paramKey);
+    params.delete("page");
+    router.push(`/?${params.toString()}`);
+  }, [router, searchParams, paramKey]);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  const labelText =
+    selected.length === 0
+      ? `All ${label}`
+      : selected.length === 1
+      ? (renderOption ? renderOption(selected[0]) : selected[0])
+      : `${selected.length} selected`;
+
+  return (
+    <div ref={ref} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`w-full inline-flex items-center justify-between gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border bg-card text-card-foreground hover:bg-muted transition-colors whitespace-nowrap
+          ${selected.length > 0 ? "border-[#00E273]" : "border-border"}`}
+      >
+        <span className="truncate">{labelText}</span>
+        <ChevronDown
+          className={`size-3.5 flex-shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 min-w-[160px] w-max max-w-[240px] max-h-64 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+          {selected.length > 0 && (
+            <button
+              type="button"
+              onClick={clearFilter}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors border-b border-border"
+            >
+              <X className="size-3" />
+              Clear {label}
+            </button>
+          )}
+          {options.map((opt) => {
+            const checked = selected.includes(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => toggleOption(opt)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left"
+              >
+                <span
+                  className={`size-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors
+                    ${checked ? "bg-[#00E273] border-[#00E273]" : "border-border bg-background"}`}
+                >
+                  {checked && <Check className="size-2.5 text-black stroke-[3]" />}
+                </span>
+                <span className="truncate">{renderOption ? renderOption(opt) : opt}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── FilterBar ───────────────────────────────────────────────────────────────
 export default function FilterBar() {
   const router       = useRouter();
   const searchParams = useSearchParams();
-  const [opts, setOpts]       = useState<Options | null>(null);
-  const [search, setSearch]   = useState(searchParams.get("q") || "");
-  const debounceRef           = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [opts, setOpts]             = useState<Options | null>(null);
+  const [search, setSearch]         = useState(searchParams.get("q") || "");
+  const [autocomplete, setAc]       = useState<AutocompleteItem[]>([]);
+  const [showAc, setShowAc]         = useState(false);
+  const debounceRef                 = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const acDebounceRef               = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef                   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/filter-options").then((r) => r.json()).then(setOpts).catch(() => {});
@@ -41,106 +149,109 @@ export default function FilterBar() {
     setSearch(searchParams.get("q") || "");
   }, [searchParams]);
 
-  const current = useCallback(
-    (key: string) => searchParams.get(key) || "",
-    [searchParams]
-  );
-
-  const setFilter = useCallback(
-    (key: string, val: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (val && val !== ALL) {
-        params.set(key, val);
-      } else {
-        params.delete(key);
+  // Close autocomplete on outside click
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowAc(false);
       }
-      router.push(`/?${params.toString()}`);
-    },
-    [router, searchParams]
-  );
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
 
   const handleSearch = useCallback(
     (val: string) => {
       setSearch(val);
+
+      // Debounce URL update
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         const params = new URLSearchParams(searchParams.toString());
-        if (val.trim()) {
-          params.set("q", val.trim());
-        } else {
-          params.delete("q");
-        }
+        if (val.trim()) params.set("q", val.trim());
+        else params.delete("q");
         params.delete("page");
         router.push(`/?${params.toString()}`);
       }, 400);
+
+      // Debounce autocomplete fetch
+      if (acDebounceRef.current) clearTimeout(acDebounceRef.current);
+      if (val.trim().length >= 1) {
+        acDebounceRef.current = setTimeout(() => {
+          fetch(`/api/autocomplete?q=${encodeURIComponent(val.trim())}`)
+            .then((r) => r.json())
+            .then((data: AutocompleteItem[]) => {
+              setAc(data);
+              setShowAc(data.length > 0);
+            })
+            .catch(() => {});
+        }, 250);
+      } else {
+        setAc([]);
+        setShowAc(false);
+      }
+    },
+    [router, searchParams]
+  );
+
+  const selectAcItem = useCallback(
+    (item: AutocompleteItem) => {
+      setSearch(item.kode);
+      setShowAc(false);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("q", item.kode);
+      params.delete("page");
+      router.push(`/?${params.toString()}`);
     },
     [router, searchParams]
   );
 
   const resetAll = useCallback(() => {
     setSearch("");
+    setShowAc(false);
+    setAc([]);
     router.push("/");
   }, [router]);
 
   const hasFilters = FILTER_KEYS.some((k) => searchParams.has(k));
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <FilterSelect
-          label="Category"
-          value={current("category")}
-          options={opts?.categories || []}
-          onChange={(v) => setFilter("category", v)}
-        />
-        <FilterSelect
-          label="Branch"
-          value={current("branch")}
-          options={opts?.branches || []}
-          onChange={(v) => setFilter("branch", v)}
-        />
-        <FilterSelect
-          label="Gudang"
-          value={current("gudang")}
-          options={opts?.gudangs || []}
-          onChange={(v) => setFilter("gudang", v)}
-        />
-        <FilterSelect
-          label="Gender"
-          value={current("gender")}
-          options={opts?.genders || []}
-          onChange={(v) => setFilter("gender", v)}
-        />
-        <FilterSelect
-          label="Series"
-          value={current("series")}
-          options={opts?.series || []}
-          onChange={(v) => setFilter("series", v)}
-        />
-        <FilterSelect
-          label="Color"
-          value={current("color")}
-          options={opts?.colors || []}
-          onChange={(v) => setFilter("color", v)}
-        />
-        <FilterSelect
-          label="Tier"
-          value={current("tier")}
-          options={opts?.tiers || []}
-          onChange={(v) => setFilter("tier", v)}
-          renderOption={(t) => `T${t}`}
-        />
-        <FilterSelect
-          label="Size"
-          value={current("size")}
-          options={opts?.sizes || []}
-          onChange={(v) => setFilter("size", v)}
-        />
+    <div className="flex flex-col gap-2 w-full">
+      {/* Filter row – fills width */}
+      <div className="flex gap-1.5 items-center w-full">
+        <div className="flex-1 min-w-[90px]">
+          <MultiSelect label="Category" paramKey="category" options={opts?.categories || []} />
+        </div>
+        <div className="flex-1 min-w-[90px]">
+          <MultiSelect label="Branch"   paramKey="branch"   options={opts?.branches   || []} />
+        </div>
+        <div className="flex-1 min-w-[90px]">
+          <MultiSelect label="Gudang"   paramKey="gudang"   options={opts?.gudangs    || []} />
+        </div>
+        <div className="flex-1 min-w-[90px]">
+          <MultiSelect label="Gender"   paramKey="gender"   options={opts?.genders    || []} />
+        </div>
+        <div className="flex-1 min-w-[90px]">
+          <MultiSelect label="Series"   paramKey="series"   options={opts?.series     || []} />
+        </div>
+        <div className="flex-1 min-w-[90px]">
+          <MultiSelect label="Color"    paramKey="color"    options={opts?.colors     || []} />
+        </div>
+        <div className="flex-1 min-w-[80px]">
+          <MultiSelect
+            label="Tier" paramKey="tier"
+            options={opts?.tiers || []}
+            renderOption={(t) => `T${t}`}
+          />
+        </div>
+        <div className="flex-1 min-w-[80px]">
+          <MultiSelect label="Size"     paramKey="size"     options={opts?.sizes      || []} />
+        </div>
         {hasFilters && (
           <button
             type="button"
             onClick={resetAll}
-            className="px-3 py-1.5 text-xs font-medium rounded-md
+            className="flex-shrink-0 px-2.5 py-1.5 text-xs font-medium rounded-md
               bg-secondary text-secondary-foreground border border-border
               hover:bg-muted transition-colors cursor-pointer flex items-center gap-1"
           >
@@ -150,58 +261,44 @@ export default function FilterBar() {
         )}
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5 pointer-events-none" />
+      {/* Search box – full width with autocomplete */}
+      <div ref={searchRef} className="relative w-full">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5 pointer-events-none z-10" />
         <Input
           type="text"
-          placeholder="Search kode besar, kode kecil, or product name..."
+          placeholder="Search kode kecil, kode besar, or product name..."
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
-          className="pl-9 h-8 text-xs bg-card"
+          onFocus={() => { if (autocomplete.length > 0) setShowAc(true); }}
+          className="pl-9 h-8 text-xs bg-card w-full"
         />
         {search && (
           <button
             type="button"
-            onClick={() => handleSearch("")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            onClick={() => { handleSearch(""); setShowAc(false); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
           >
             <X className="size-3" />
           </button>
         )}
+
+        {/* Autocomplete dropdown */}
+        {showAc && autocomplete.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-56 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+            {autocomplete.map((item) => (
+              <button
+                key={item.kode}
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); selectAcItem(item); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left"
+              >
+                <span className="font-mono font-medium text-foreground flex-shrink-0">{item.kode}</span>
+                <span className="text-muted-foreground truncate">— {item.article}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-
-function FilterSelect({
-  label,
-  value,
-  options,
-  onChange,
-  renderOption,
-}: {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-  renderOption?: (v: string) => string;
-}) {
-  return (
-    <Select
-      value={value || ALL}
-      onValueChange={(v) => onChange(v === ALL ? "" : v)}
-    >
-      <SelectTrigger size="sm" className="min-w-[110px] bg-card text-card-foreground">
-        <SelectValue placeholder={`All ${label}`} />
-      </SelectTrigger>
-      <SelectContent className="max-h-64 overflow-y-auto">
-        <SelectItem value={ALL}>All {label}</SelectItem>
-        {options.map((o) => (
-          <SelectItem key={o} value={o}>
-            {renderOption ? renderOption(o) : o}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
   );
 }
