@@ -15,6 +15,7 @@ interface Options {
   genders: string[];
   tiers: string[];
   categories: string[];
+  series: string[];
 }
 
 const ALL = "__all__";
@@ -57,7 +58,8 @@ export default function FilterBar() {
     searchParams.has("branch") ||
     searchParams.has("gender") ||
     searchParams.has("tier") ||
-    searchParams.has("category");
+    searchParams.has("category") ||
+    searchParams.has("series");
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -85,6 +87,12 @@ export default function FilterBar() {
         value={current("category")}
         options={opts?.categories || []}
         onChange={(v) => setFilter("category", v)}
+      />
+      <FilterSelect
+        label="Series"
+        value={current("series")}
+        options={opts?.series || []}
+        onChange={(v) => setFilter("series", v)}
       />
       {hasFilters && (
         <button

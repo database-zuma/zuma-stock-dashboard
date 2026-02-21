@@ -11,10 +11,10 @@ interface GenderRow {
 }
 
 const GENDER_MONO: Record<string, string> = {
-  Men: "#000000",
-  Ladies: "#666666",
-  "Baby & Kids": "#999999",
-  Unknown: "#CCCCCC",
+  Men: "#E8630A",
+  Ladies: "#1A1A18",
+  "Baby & Kids": "#5D625A",
+  Unknown: "#A9A69F",
 };
 
 export default function GenderDonut({ data }: { data: GenderRow[] }) {
@@ -53,11 +53,11 @@ export default function GenderDonut({ data }: { data: GenderRow[] }) {
               },
             },
             tooltip: {
-              backgroundColor: "rgba(255,255,255,0.95)",
+              backgroundColor: "#FFFFFF",
               borderColor: "rgba(0,0,0,0.08)",
               borderWidth: 1,
-              titleColor: "#000000",
-              bodyColor: "#666666",
+              titleColor: "#1A1A18",
+              bodyColor: "#1A1A18",
               padding: 10,
               callbacks: {
                 label: (ctx) => {

@@ -23,8 +23,7 @@ ChartJS.register(
 
 ChartJS.defaults.color = "#86868b";
 ChartJS.defaults.borderColor = "rgba(0,0,0,0.06)";
-ChartJS.defaults.font.family =
-  '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif';
+ChartJS.defaults.font.family = '"Inter", system-ui, sans-serif';
 ChartJS.defaults.responsive = true;
 
 export default ChartJS;

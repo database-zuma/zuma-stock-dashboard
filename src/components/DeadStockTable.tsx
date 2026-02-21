@@ -58,8 +58,7 @@ export default function DeadStockTable({ data }: { data: DeadStockRow[] }) {
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-border flex items-center gap-3">
-        <span className="text-lg">⚠️</span>
+      <div className="px-5 py-4 border-b border-border">
         <div>
           <h3 className="font-semibold text-foreground">Dead & Slow Stock</h3>
           <p className="text-xs text-muted-foreground">

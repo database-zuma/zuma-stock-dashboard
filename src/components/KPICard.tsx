@@ -53,16 +53,15 @@ export default function KPICard({
   return (
     <Card
       ref={ref}
-      className={`relative overflow-hidden py-0 transition-all duration-300
-        hover:-translate-y-0.5 hover:shadow-md
-        ${accent ? "border-l-[3px] border-l-foreground" : ""}`}
+      className={`relative overflow-hidden py-0 transition-colors duration-300
+        ${accent ? "border-l-2 border-l-primary" : ""}`}
     >
       <CardHeader className="flex-row items-start justify-between gap-2 px-5 pt-5 pb-0">
         <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
           {title}
         </CardTitle>
         <div
-          className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center
+          className={`flex-shrink-0 w-9 h-9 rounded-sm flex items-center justify-center
             ${accent ? "bg-foreground/10 text-foreground" : "bg-muted text-muted-foreground"}`}
         >
           {icon}

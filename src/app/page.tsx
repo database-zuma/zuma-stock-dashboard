@@ -63,10 +63,10 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-12">
-      <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-border bg-background sticky top-0 z-50">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-semibold tracking-tight text-primary">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
               Stock Dashboard
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">

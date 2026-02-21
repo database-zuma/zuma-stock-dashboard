@@ -22,13 +22,13 @@ const TIER_NAMES: Record<string, string> = {
 };
 
 const MONO_TIER: Record<string, string> = {
-  "1": "#000000",
-  "2": "#333333",
-  "3": "#555555",
-  "4": "#777777",
-  "5": "#999999",
-  "8": "#BBBBBB",
-  "0": "#DDDDDD",
+  "1": "#E8630A",
+  "2": "#1A1A18",
+  "3": "#5D625A",
+  "4": "#A9A69F",
+  "5": "#E3E3DE",
+  "8": "#F5F5F0",
+  "0": "#1A1A18",
 };
 
 export default function BranchChart({ data }: { data: BranchRow[] }) {
@@ -67,11 +67,11 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
               labels: { boxWidth: 12, padding: 12, font: { size: 11 } },
             },
             tooltip: {
-              backgroundColor: "rgba(255,255,255,0.95)",
+              backgroundColor: "#FFFFFF",
               borderColor: "rgba(0,0,0,0.08)",
               borderWidth: 1,
-              titleColor: "#000000",
-              bodyColor: "#666666",
+              titleColor: "#1A1A18",
+              bodyColor: "#1A1A18",
               padding: 10,
               callbacks: {
                 label: (ctx) =>

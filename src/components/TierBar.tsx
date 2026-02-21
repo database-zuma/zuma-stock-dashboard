@@ -14,12 +14,12 @@ interface TierRow {
 const TIER_ORDER = ["1", "2", "3", "4", "5", "8"];
 
 const MONO_TIER: Record<string, string> = {
-  "1": "#000000",
-  "2": "#333333",
-  "3": "#555555",
-  "4": "#777777",
-  "5": "#999999",
-  "8": "#BBBBBB",
+  "1": "#E8630A",
+  "2": "#1A1A18",
+  "3": "#5D625A",
+  "4": "#A9A69F",
+  "5": "#E3E3DE",
+  "8": "#F5F5F0",
 };
 
 export default function TierBar({ data }: { data: TierRow[] }) {
@@ -48,11 +48,11 @@ export default function TierBar({ data }: { data: TierRow[] }) {
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: "rgba(255,255,255,0.95)",
+              backgroundColor: "#FFFFFF",
               borderColor: "rgba(0,0,0,0.08)",
               borderWidth: 1,
-              titleColor: "#000000",
-              bodyColor: "#666666",
+              titleColor: "#1A1A18",
+              bodyColor: "#1A1A18",
               padding: 10,
               callbacks: {
                 afterLabel: (ctx) => {

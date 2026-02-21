@@ -12,10 +12,12 @@ function buildWhere(sp: URLSearchParams): { clause: string; values: string[] } {
   const gender   = sp.get("gender");
   const tier     = sp.get("tier");
   const category = sp.get("category");
+  const series   = sp.get("series");
   if (branch)   { conds.push(`branch = $${i++}`);       vals.push(branch); }
   if (gender)   { conds.push(`gender_group = $${i++}`); vals.push(gender); }
   if (tier)     { conds.push(`tier = $${i++}`);         vals.push(tier); }
   if (category) { conds.push(`category = $${i++}`);     vals.push(category); }
+  if (series)   { conds.push(`series = $${i++}`);       vals.push(series); }
   return {
     clause: conds.length ? "WHERE " + conds.join(" AND ") : "",
     values: vals,

@@ -13,6 +13,7 @@ export interface FilterParams {
   gender?: string;
   tier?: string;
   category?: string;
+  series?: string;
 }
 
 export function parseFilters(searchParams: URLSearchParams): FilterParams {
@@ -21,6 +22,7 @@ export function parseFilters(searchParams: URLSearchParams): FilterParams {
     gender: searchParams.get("gender") || undefined,
     tier: searchParams.get("tier") || undefined,
     category: searchParams.get("category") || undefined,
+    series: searchParams.get("series") || undefined,
   };
 }
 
@@ -62,6 +64,12 @@ export function buildWhereClause(filters: FilterParams): {
     paramIndex++;
   }
 
+  if (filters.series) {
+    conditions.push(`series = $${paramIndex}`);
+    values.push(filters.series);
+    paramIndex++;
+  }
+
   return {
     clause: "WHERE " + conditions.join("\n  AND "),
     values,
@@ -75,5 +83,6 @@ export function nextParamIndex(filters: FilterParams): number {
   if (filters.gender && filters.gender !== "Baby & Kids") idx++;
   if (filters.tier) idx++;
   if (filters.category) idx++;
+  if (filters.series) idx++;
   return idx;
 }

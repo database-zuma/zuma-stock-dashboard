@@ -6,11 +6,12 @@ export const maxDuration = 30;
 
 export async function GET() {
   try {
-    const [branchRes, genderRes, tierRes, categoryRes] = await Promise.all([
+    const [branchRes, genderRes, tierRes, categoryRes, seriesRes] = await Promise.all([
       pool.query(`SELECT DISTINCT branch AS val FROM core.dashboard_cache WHERE branch IS NOT NULL ORDER BY 1`),
       pool.query(`SELECT DISTINCT gender_group AS val FROM core.dashboard_cache WHERE gender_group IS NOT NULL ORDER BY 1`),
       pool.query(`SELECT DISTINCT tier AS val FROM core.dashboard_cache ORDER BY 1`),
       pool.query(`SELECT DISTINCT category AS val FROM core.dashboard_cache WHERE category IS NOT NULL ORDER BY 1`),
+      pool.query(`SELECT DISTINCT series AS val FROM core.dashboard_cache WHERE series IS NOT NULL ORDER BY 1`),
     ]);
 
     return NextResponse.json({
@@ -18,6 +19,7 @@ export async function GET() {
       genders: genderRes.rows.map((r) => r.val),
       tiers: tierRes.rows.map((r) => r.val),
       categories: categoryRes.rows.map((r) => r.val),
+      series: seriesRes.rows.map((r) => r.val),
     });
   } catch (e) {
     console.error("filter-options error:", e);
