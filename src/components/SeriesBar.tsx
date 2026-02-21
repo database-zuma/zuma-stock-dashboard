@@ -78,7 +78,7 @@ export default function SeriesBar({ data }: { data: SeriesRow[] }) {
 
 export function SeriesBarSkeleton() {
   return (
-    <div className="flex flex-col gap-2 p-4">
+    <div className="flex flex-col gap-2 p-4" style={{ minHeight: 350 }}>
       {[...Array(10)].map((_, i) => (
         <Skeleton key={i} className="h-5" style={{ width: `${90 - i * 5}%` }} />
       ))}

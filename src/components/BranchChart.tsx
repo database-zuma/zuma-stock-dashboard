@@ -104,7 +104,7 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
 
 export function BranchChartSkeleton() {
   return (
-    <div className="flex flex-col gap-3 p-4">
+    <div className="flex flex-col gap-3 p-4" style={{ minHeight: 280 }}>
       {[...Array(6)].map((_, i) => (
         <Skeleton key={i} className="h-6" style={{ width: `${80 - i * 8}%` }} />
       ))}
