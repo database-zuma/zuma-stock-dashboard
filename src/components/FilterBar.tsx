@@ -2,6 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Options {
   branches: string[];
@@ -9,6 +16,8 @@ interface Options {
   tiers: string[];
   categories: string[];
 }
+
+const ALL = "__all__";
 
 export default function FilterBar() {
   const router = useRouter();
@@ -30,7 +39,7 @@ export default function FilterBar() {
   const setFilter = useCallback(
     (key: string, val: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (val) {
+      if (val && val !== ALL) {
         params.set(key, val);
       } else {
         params.delete(key);
@@ -51,27 +60,27 @@ export default function FilterBar() {
     searchParams.has("category");
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <Select
+    <div className="flex flex-wrap items-center gap-2">
+      <FilterSelect
         label="Branch"
         value={current("branch")}
         options={opts?.branches || []}
         onChange={(v) => setFilter("branch", v)}
       />
-      <Select
+      <FilterSelect
         label="Gender"
         value={current("gender")}
         options={opts?.genders || []}
         onChange={(v) => setFilter("gender", v)}
       />
-      <Select
+      <FilterSelect
         label="Tier"
         value={current("tier")}
         options={opts?.tiers || []}
         onChange={(v) => setFilter("tier", v)}
         renderOption={(t) => `T${t}`}
       />
-      <Select
+      <FilterSelect
         label="Category"
         value={current("category")}
         options={opts?.categories || []}
@@ -80,9 +89,10 @@ export default function FilterBar() {
       {hasFilters && (
         <button
           onClick={resetAll}
-          className="px-4 py-2 text-sm font-medium rounded-lg
-            bg-zuma-accent/10 text-zuma-accent border border-zuma-accent/30
-            hover:bg-zuma-accent/20 transition-colors cursor-pointer"
+          className="px-3 py-1.5 text-xs font-medium rounded-md
+            bg-secondary text-secondary-foreground border border-border
+            hover:bg-accent hover:text-accent-foreground
+            transition-colors cursor-pointer"
         >
           Reset
         </button>
@@ -91,7 +101,7 @@ export default function FilterBar() {
   );
 }
 
-function Select({
+function FilterSelect({
   label,
   value,
   options,
@@ -105,27 +115,21 @@ function Select({
   renderOption?: (v: string) => string;
 }) {
   return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-zuma-card border border-zuma-border rounded-lg
-          px-4 py-2 pr-8 text-sm text-zuma-text
-          hover:border-zuma-accent/40 focus:border-zuma-accent focus:outline-none
-          transition-colors cursor-pointer"
-      >
-        <option value="">All {label}</option>
+    <Select
+      value={value || ALL}
+      onValueChange={(v) => onChange(v === ALL ? "" : v)}
+    >
+      <SelectTrigger size="sm" className="min-w-[110px] bg-card text-card-foreground">
+        <SelectValue placeholder={`All ${label}`} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>All {label}</SelectItem>
         {options.map((o) => (
-          <option key={o} value={o}>
+          <SelectItem key={o} value={o}>
             {renderOption ? renderOption(o) : o}
-          </option>
+          </SelectItem>
         ))}
-      </select>
-      <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M3 4.5L6 7.5L9 4.5" stroke="#8CA3AD" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-      </div>
-    </div>
+      </SelectContent>
+    </Select>
   );
 }

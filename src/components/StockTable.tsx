@@ -2,8 +2,20 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { Search } from "lucide-react";
 import { fmtPairs, fmtRupiah } from "@/lib/format";
 import TierBadge from "./TierBadge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 interface StockRow {
   kode_mix: string;
@@ -72,115 +84,102 @@ export default function StockTable() {
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
 
   return (
-    <div className="rounded-xl border border-zuma-border bg-zuma-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-zuma-border flex flex-col sm:flex-row sm:items-center gap-3">
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex-1">
-          <h3 className="font-semibold">Inventory Detail</h3>
-          <p className="text-xs text-zuma-muted">
+          <h3 className="font-semibold text-foreground">Inventory Detail</h3>
+          <p className="text-xs text-muted-foreground">
             {data ? `${fmtPairs(data.total)} total groups` : "Loading..."}
           </p>
         </div>
         <div className="relative">
-          <input
+          <Input
             type="text"
             placeholder="Search article, series..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-zuma-base border border-zuma-border rounded-lg px-4 py-2 pr-8 text-sm
-              placeholder:text-zuma-muted/50 focus:border-zuma-accent/50 focus:outline-none w-64"
+            className="w-64 pr-9"
           />
-          <svg
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zuma-muted"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21l-4.35-4.35" />
-          </svg>
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5 pointer-events-none" />
         </div>
       </div>
-      <div className="overflow-x-auto scrollbar-thin">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-zuma-muted uppercase tracking-wider border-b border-zuma-border">
-              <th className="px-4 py-3">Article</th>
-              <th className="px-4 py-3">Series</th>
-              <th className="px-4 py-3">Gender</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Tier</th>
-              <th className="px-4 py-3">Branch</th>
-              <th className="px-4 py-3">Location</th>
-              <th className="px-4 py-3 text-right">Pairs</th>
-              <th className="px-4 py-3 text-right">Est. RSP</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              [...Array(10)].map((_, i) => (
-                <tr key={i} className="border-b border-zuma-border/50">
-                  {[...Array(9)].map((_, j) => (
-                    <td key={j} className="px-4 py-2.5">
-                      <div className="skeleton h-4 w-full" />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : (
-              (filtered || []).map((row, i) => (
-                <tr
-                  key={`${row.kode_mix}-${row.nama_gudang}-${i}`}
-                  className={`border-b border-zuma-border/50 transition-colors hover:bg-zuma-card-hover
-                    ${i % 2 === 0 ? "bg-zuma-card" : "bg-zuma-card-hover/30"}`}
-                >
-                  <td className="px-4 py-2.5 font-medium truncate max-w-[180px]">
-                    {row.article || row.kode_mix}
-                  </td>
-                  <td className="px-4 py-2.5 text-zuma-muted">{row.series || "—"}</td>
-                  <td className="px-4 py-2.5 text-zuma-muted">{row.gender_group}</td>
-                  <td className="px-4 py-2.5 text-zuma-muted">{row.tipe || "—"}</td>
-                  <td className="px-4 py-2.5">
-                    <TierBadge tier={row.tier} />
-                  </td>
-                  <td className="px-4 py-2.5 text-zuma-muted">{row.branch}</td>
-                  <td className="px-4 py-2.5 text-zuma-muted truncate max-w-[140px]">
-                    {row.nama_gudang || "—"}
-                  </td>
-                  <td className="px-4 py-2.5 tabular-nums text-right">{fmtPairs(row.pairs)}</td>
-                  <td className="px-4 py-2.5 tabular-nums text-right text-zuma-muted">
-                    {fmtRupiah(row.est_rsp_value)}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+
+      <Table>
+        <TableHeader>
+          <TableRow className="border-b border-border hover:bg-transparent">
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Article</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Series</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Gender</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Type</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Tier</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Branch</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Location</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">Pairs</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">Est. RSP</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            [...Array(10)].map((_, i) => (
+              <TableRow key={`skel-row-${i}`} className="border-b border-border/50">
+                {[...Array(9)].map((_, j) => (
+                  <TableCell key={`skel-cell-${j}`} className="px-4 py-2.5">
+                    <Skeleton className="h-4 w-full" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            (filtered || []).map((row, i) => (
+              <TableRow
+                key={`${row.kode_mix}-${row.nama_gudang}-${i}`}
+                className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}
+              >
+                <TableCell className="px-4 py-2.5 font-medium truncate max-w-[180px]">
+                  {row.article || row.kode_mix}
+                </TableCell>
+                <TableCell className="px-4 py-2.5 text-muted-foreground">{row.series || "—"}</TableCell>
+                <TableCell className="px-4 py-2.5 text-muted-foreground">{row.gender_group}</TableCell>
+                <TableCell className="px-4 py-2.5 text-muted-foreground">{row.tipe || "—"}</TableCell>
+                <TableCell className="px-4 py-2.5">
+                  <TierBadge tier={row.tier} />
+                </TableCell>
+                <TableCell className="px-4 py-2.5 text-muted-foreground">{row.branch}</TableCell>
+                <TableCell className="px-4 py-2.5 text-muted-foreground truncate max-w-[140px]">
+                  {row.nama_gudang || "—"}
+                </TableCell>
+                <TableCell className="px-4 py-2.5 tabular-nums text-right">{fmtPairs(row.pairs)}</TableCell>
+                <TableCell className="px-4 py-2.5 tabular-nums text-right text-muted-foreground">
+                  {fmtRupiah(row.est_rsp_value)}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
       {!loading && totalPages > 1 && (
-        <div className="px-5 py-3 border-t border-zuma-border flex items-center justify-between">
-          <p className="text-xs text-zuma-muted">
+        <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
             Page {page} of {fmtPairs(totalPages)}
           </p>
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 text-xs rounded-lg bg-zuma-base border border-zuma-border
-                disabled:opacity-30 hover:border-zuma-accent/40 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               ← Prev
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1.5 text-xs rounded-lg bg-zuma-base border border-zuma-border
-                disabled:opacity-30 hover:border-zuma-accent/40 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               Next →
-            </button>
+            </Button>
           </div>
         </div>
       )}

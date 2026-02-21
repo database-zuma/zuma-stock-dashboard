@@ -2,7 +2,8 @@
 
 import "./ChartSetup";
 import { Bar } from "react-chartjs-2";
-import { TIER_COLORS, fmtPairs } from "@/lib/format";
+import { fmtPairs } from "@/lib/format";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TierRow {
   tier: string;
@@ -11,6 +12,15 @@ interface TierRow {
 }
 
 const TIER_ORDER = ["1", "2", "3", "4", "5", "8"];
+
+const MONO_TIER: Record<string, string> = {
+  "1": "#000000",
+  "2": "#333333",
+  "3": "#555555",
+  "4": "#777777",
+  "5": "#999999",
+  "8": "#BBBBBB",
+};
 
 export default function TierBar({ data }: { data: TierRow[] }) {
   const sorted = TIER_ORDER.map(
@@ -25,7 +35,7 @@ export default function TierBar({ data }: { data: TierRow[] }) {
           datasets: [
             {
               data: sorted.map((d) => d.pairs),
-              backgroundColor: sorted.map((d) => TIER_COLORS[d.tier] || "#8CA3AD"),
+              backgroundColor: sorted.map((d) => MONO_TIER[d.tier] || "#999999"),
               borderRadius: 4,
               borderSkipped: false,
               maxBarThickness: 40,
@@ -38,11 +48,11 @@ export default function TierBar({ data }: { data: TierRow[] }) {
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: "#0A3D50",
-              borderColor: "rgba(255,255,255,0.1)",
+              backgroundColor: "rgba(255,255,255,0.95)",
+              borderColor: "rgba(0,0,0,0.08)",
               borderWidth: 1,
-              titleColor: "#fff",
-              bodyColor: "#8CA3AD",
+              titleColor: "#000000",
+              bodyColor: "#666666",
               padding: 10,
               callbacks: {
                 afterLabel: (ctx) => {
@@ -59,7 +69,7 @@ export default function TierBar({ data }: { data: TierRow[] }) {
               ticks: { font: { size: 12, weight: "bold" as const } },
             },
             y: {
-              grid: { color: "rgba(255,255,255,0.04)" },
+              grid: { color: "rgba(0,0,0,0.04)" },
               ticks: {
                 callback: (v) => {
                   const n = Number(v);
@@ -78,7 +88,7 @@ export function TierBarSkeleton() {
   return (
     <div className="flex items-end gap-2 p-4" style={{ height: 220 }}>
       {[60, 40, 80, 30, 20, 50].map((h, i) => (
-        <div key={i} className="skeleton flex-1" style={{ height: `${h}%` }} />
+        <Skeleton key={i} className="flex-1 rounded-md" style={{ height: `${h}%` }} />
       ))}
     </div>
   );

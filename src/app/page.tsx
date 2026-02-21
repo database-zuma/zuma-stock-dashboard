@@ -62,24 +62,21 @@ function DashboardContent() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   return (
-    <div className="min-h-screen pb-12">
-      <header className="border-b border-zuma-border bg-zuma-card/60 backdrop-blur-sm sticky top-0 z-50">
+    <div className="min-h-screen bg-background text-foreground pb-12">
+      <header className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold gradient-text tracking-tight">
-              ZUMA STOCK DASHBOARD
+            <h1 className="text-3xl font-semibold tracking-tight text-primary">
+              Stock Dashboard
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="w-2 h-2 rounded-full bg-zuma-accent pulse-dot inline-block" />
-              <span className="text-xs text-zuma-muted">
-                Snapshot:{" "}
-                {kpis?.snapshot_date
-                  ? new Date(kpis.snapshot_date).toLocaleDateString("en-GB", {
-                      day: "2-digit", month: "short", year: "numeric",
-                    })
-                  : "Loading..."}
-              </span>
-            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Snapshot:{" "}
+              {kpis?.snapshot_date
+                ? new Date(kpis.snapshot_date).toLocaleDateString("en-GB", {
+                    day: "2-digit", month: "short", year: "numeric",
+                  })
+                : "Loading..."}
+            </p>
           </div>
           <FilterBar />
         </div>
@@ -116,24 +113,24 @@ function DashboardContent() {
         </section>
 
         <section className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <div className="lg:col-span-3 rounded-xl border border-zuma-border bg-zuma-card p-4">
-            <h3 className="font-semibold text-sm mb-3 text-zuma-muted uppercase tracking-wider">Stock by Branch &amp; Tier</h3>
+          <div className="lg:col-span-3 rounded-xl border border-border bg-card p-4">
+            <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">Stock by Branch &amp; Tier</h3>
             {branchData ? <BranchChart data={branchData} /> : <BranchChartSkeleton />}
           </div>
           <div className="lg:col-span-2 grid grid-rows-2 gap-4">
-            <div className="rounded-xl border border-zuma-border bg-zuma-card p-4">
-              <h3 className="font-semibold text-sm mb-2 text-zuma-muted uppercase tracking-wider">Gender Split</h3>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <h3 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wider">Gender Split</h3>
               {genderData ? <GenderDonut data={genderData} /> : <GenderDonutSkeleton />}
             </div>
-            <div className="rounded-xl border border-zuma-border bg-zuma-card p-4">
-              <h3 className="font-semibold text-sm mb-2 text-zuma-muted uppercase tracking-wider">Tier Distribution</h3>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <h3 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wider">Tier Distribution</h3>
               {tierData ? <TierBar data={tierData} /> : <TierBarSkeleton />}
             </div>
           </div>
         </section>
 
-        <section className="rounded-xl border border-zuma-border bg-zuma-card p-4">
-          <h3 className="font-semibold text-sm mb-3 text-zuma-muted uppercase tracking-wider">Top 15 Series by Stock</h3>
+        <section className="rounded-xl border border-border bg-card p-4">
+          <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">Top 15 Series by Stock</h3>
           {seriesData ? <SeriesBar data={seriesData} /> : <SeriesBarSkeleton />}
         </section>
 
@@ -147,7 +144,7 @@ function DashboardContent() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-zuma-muted">Loading dashboard...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="text-muted-foreground">Loading dashboard...</div></div>}>
       <DashboardContent />
     </Suspense>
   );

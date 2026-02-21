@@ -3,17 +3,18 @@
 import "./ChartSetup";
 import { Doughnut } from "react-chartjs-2";
 import { fmtPairs } from "@/lib/format";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface GenderRow {
   gender_group: string;
   pairs: number;
 }
 
-const GENDER_COLORS: Record<string, string> = {
-  Men: "#00E273",
-  Ladies: "#7B6FE8",
-  "Baby & Kids": "#00B5C8",
-  Unknown: "#8CA3AD",
+const GENDER_MONO: Record<string, string> = {
+  Men: "#000000",
+  Ladies: "#666666",
+  "Baby & Kids": "#999999",
+  Unknown: "#CCCCCC",
 };
 
 export default function GenderDonut({ data }: { data: GenderRow[] }) {
@@ -28,9 +29,10 @@ export default function GenderDonut({ data }: { data: GenderRow[] }) {
             {
               data: data.map((d) => d.pairs),
               backgroundColor: data.map(
-                (d) => GENDER_COLORS[d.gender_group] || "#8CA3AD"
+                (d) => GENDER_MONO[d.gender_group] || "#999999"
               ),
-              borderWidth: 0,
+              borderWidth: 2,
+              borderColor: "#ffffff",
               hoverOffset: 6,
             },
           ],
@@ -51,11 +53,11 @@ export default function GenderDonut({ data }: { data: GenderRow[] }) {
               },
             },
             tooltip: {
-              backgroundColor: "#0A3D50",
-              borderColor: "rgba(255,255,255,0.1)",
+              backgroundColor: "rgba(255,255,255,0.95)",
+              borderColor: "rgba(0,0,0,0.08)",
               borderWidth: 1,
-              titleColor: "#fff",
-              bodyColor: "#8CA3AD",
+              titleColor: "#000000",
+              bodyColor: "#666666",
               padding: 10,
               callbacks: {
                 label: (ctx) => {
@@ -68,8 +70,8 @@ export default function GenderDonut({ data }: { data: GenderRow[] }) {
         }}
       />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[65%] text-center pointer-events-none">
-        <p className="text-lg font-bold">{fmtPairs(total)}</p>
-        <p className="text-[10px] text-zuma-muted uppercase tracking-wider">pairs</p>
+        <p className="text-lg font-bold text-foreground">{fmtPairs(total)}</p>
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">pairs</p>
       </div>
     </div>
   );
@@ -78,7 +80,7 @@ export default function GenderDonut({ data }: { data: GenderRow[] }) {
 export function GenderDonutSkeleton() {
   return (
     <div className="flex items-center justify-center" style={{ height: 220 }}>
-      <div className="skeleton w-36 h-36 rounded-full" />
+      <Skeleton className="w-36 h-36 rounded-full" />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import "./ChartSetup";
 import { Bar } from "react-chartjs-2";
-import { TIER_COLORS } from "@/lib/format";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BranchRow {
   branch: string;
@@ -21,6 +21,16 @@ const TIER_NAMES: Record<string, string> = {
   "0": "T0",
 };
 
+const MONO_TIER: Record<string, string> = {
+  "1": "#000000",
+  "2": "#333333",
+  "3": "#555555",
+  "4": "#777777",
+  "5": "#999999",
+  "8": "#BBBBBB",
+  "0": "#DDDDDD",
+};
+
 export default function BranchChart({ data }: { data: BranchRow[] }) {
   const branches = [...new Set(data.map((d) => d.branch))];
 
@@ -36,7 +46,7 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
       const row = data.find((d) => d.branch === b && d.tier === tier);
       return row ? row.pairs : 0;
     }),
-    backgroundColor: TIER_COLORS[tier],
+    backgroundColor: MONO_TIER[tier],
     borderRadius: 3,
     borderSkipped: false as const,
   }));
@@ -57,11 +67,11 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
               labels: { boxWidth: 12, padding: 12, font: { size: 11 } },
             },
             tooltip: {
-              backgroundColor: "#0A3D50",
-              borderColor: "rgba(255,255,255,0.1)",
+              backgroundColor: "rgba(255,255,255,0.95)",
+              borderColor: "rgba(0,0,0,0.08)",
               borderWidth: 1,
-              titleColor: "#fff",
-              bodyColor: "#8CA3AD",
+              titleColor: "#000000",
+              bodyColor: "#666666",
               padding: 10,
               callbacks: {
                 label: (ctx) =>
@@ -72,7 +82,7 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
           scales: {
             x: {
               stacked: true,
-              grid: { color: "rgba(255,255,255,0.04)" },
+              grid: { color: "rgba(0,0,0,0.04)" },
               ticks: {
                 callback: (v) => {
                   const n = Number(v);
@@ -96,7 +106,7 @@ export function BranchChartSkeleton() {
   return (
     <div className="flex flex-col gap-3 p-4">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="skeleton h-6" style={{ width: `${80 - i * 8}%` }} />
+        <Skeleton key={i} className="h-6" style={{ width: `${80 - i * 8}%` }} />
       ))}
     </div>
   );

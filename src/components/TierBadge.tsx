@@ -1,20 +1,14 @@
 "use client";
 
-import { TIER_COLORS, TIER_LABELS } from "@/lib/format";
+import { TIER_LABELS } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
 
 export default function TierBadge({ tier }: { tier: string }) {
-  const color = TIER_COLORS[tier] || TIER_COLORS["3"];
   const label = TIER_LABELS[tier] || `T${tier}`;
 
   return (
-    <span
-      className="tier-badge"
-      style={{
-        backgroundColor: `${color}26`,
-        color: color,
-      }}
-    >
+    <Badge variant="outline" className="text-[10px] font-medium tracking-tight">
       {label}
-    </span>
+    </Badge>
   );
 }

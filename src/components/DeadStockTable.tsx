@@ -2,7 +2,19 @@
 
 import { fmtPairs, fmtRupiah } from "@/lib/format";
 import TierBadge from "./TierBadge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import { useState, useMemo } from "react";
+
+const PAGE_SIZE = 25;
 
 interface DeadStockRow {
   kode_mix: string;
@@ -18,12 +30,16 @@ interface DeadStockRow {
 export default function DeadStockTable({ data }: { data: DeadStockRow[] }) {
   const [sortKey, setSortKey] = useState<"pairs" | "est_rsp_value">("pairs");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
 
   const sorted = useMemo(() => {
     return [...data].sort((a, b) =>
       sortDir === "desc" ? b[sortKey] - a[sortKey] : a[sortKey] - b[sortKey]
     );
   }, [data, sortKey, sortDir]);
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+  const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const toggleSort = (key: "pairs" | "est_rsp_value") => {
     if (sortKey === key) {
@@ -32,6 +48,7 @@ export default function DeadStockTable({ data }: { data: DeadStockRow[] }) {
       setSortKey(key);
       setSortDir("desc");
     }
+    setPage(1);
   };
 
   if (!data.length) return null;
@@ -40,75 +57,98 @@ export default function DeadStockTable({ data }: { data: DeadStockRow[] }) {
   const totalValue = data.reduce((s, d) => s + d.est_rsp_value, 0);
 
   return (
-    <div className="rounded-xl border border-zuma-t4/30 bg-zuma-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-zuma-border flex items-center gap-3">
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-3">
         <span className="text-lg">⚠️</span>
         <div>
-          <h3 className="font-semibold text-zuma-t4">Dead & Slow Stock</h3>
-          <p className="text-xs text-zuma-muted">
+          <h3 className="font-semibold text-foreground">Dead & Slow Stock</h3>
+          <p className="text-xs text-muted-foreground">
             {fmtPairs(totalPairs)} pairs · {fmtRupiah(totalValue)} RSP value · T4+T5 items
           </p>
         </div>
       </div>
-      <div className="overflow-x-auto scrollbar-thin">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-zuma-muted uppercase tracking-wider border-b border-zuma-border">
-              <th className="px-4 py-3">Article</th>
-              <th className="px-4 py-3">Series</th>
-              <th className="px-4 py-3">Gender</th>
-              <th className="px-4 py-3">Branch</th>
-              <th className="px-4 py-3">Tier</th>
-              <th
-                className="px-4 py-3 cursor-pointer hover:text-zuma-accent"
-                onClick={() => toggleSort("pairs")}
-              >
-                Pairs {sortKey === "pairs" ? (sortDir === "desc" ? "↓" : "↑") : ""}
-              </th>
-              <th
-                className="px-4 py-3 cursor-pointer hover:text-zuma-accent text-right"
-                onClick={() => toggleSort("est_rsp_value")}
-              >
-                Est. Value{" "}
-                {sortKey === "est_rsp_value" ? (sortDir === "desc" ? "↓" : "↑") : ""}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.slice(0, 50).map((row, i) => (
-              <tr
-                key={`${row.kode_mix}-${row.branch}-${i}`}
-                className={`border-b border-zuma-border/50 transition-colors
-                  ${i % 2 === 0 ? "bg-zuma-card" : "bg-zuma-card-hover/40"}`}
-              >
-                <td className="px-4 py-2.5 font-medium truncate max-w-[200px]">
-                  {row.article || row.kode_mix}
-                </td>
-                <td className="px-4 py-2.5 text-zuma-muted">{row.series || "—"}</td>
-                <td className="px-4 py-2.5 text-zuma-muted">{row.gender_group}</td>
-                <td className="px-4 py-2.5 text-zuma-muted">{row.branch}</td>
-                <td className="px-4 py-2.5">
-                  <TierBadge tier={row.tier} />
-                </td>
-                <td className="px-4 py-2.5 tabular-nums">{fmtPairs(row.pairs)}</td>
-                <td className="px-4 py-2.5 tabular-nums text-right text-zuma-muted">
-                  {fmtRupiah(row.est_rsp_value)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow className="border-b border-border hover:bg-transparent">
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Article</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Series</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Gender</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Branch</TableHead>
+            <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Tier</TableHead>
+            <TableHead
+              className="text-xs uppercase tracking-wider text-muted-foreground px-4 cursor-pointer hover:text-foreground select-none"
+              onClick={() => toggleSort("pairs")}
+            >
+              Pairs {sortKey === "pairs" ? (sortDir === "desc" ? "↓" : "↑") : ""}
+            </TableHead>
+            <TableHead
+              className="text-xs uppercase tracking-wider text-muted-foreground px-4 cursor-pointer hover:text-foreground text-right select-none"
+              onClick={() => toggleSort("est_rsp_value")}
+            >
+              Est. Value{" "}
+              {sortKey === "est_rsp_value" ? (sortDir === "desc" ? "↓" : "↑") : ""}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paged.map((row, i) => (
+            <TableRow
+              key={`${row.kode_mix}-${row.branch}-${i}`}
+              className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}
+            >
+              <TableCell className="px-4 py-2.5 font-medium truncate max-w-[200px]">
+                {row.article || row.kode_mix}
+              </TableCell>
+              <TableCell className="px-4 py-2.5 text-muted-foreground">{row.series || "—"}</TableCell>
+              <TableCell className="px-4 py-2.5 text-muted-foreground">{row.gender_group}</TableCell>
+              <TableCell className="px-4 py-2.5 text-muted-foreground">{row.branch}</TableCell>
+              <TableCell className="px-4 py-2.5">
+                <TierBadge tier={row.tier} />
+              </TableCell>
+              <TableCell className="px-4 py-2.5 tabular-nums">{fmtPairs(row.pairs)}</TableCell>
+              <TableCell className="px-4 py-2.5 tabular-nums text-right text-muted-foreground">
+                {fmtRupiah(row.est_rsp_value)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {totalPages > 1 && (
+        <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Page {page} of {totalPages} · {fmtPairs(sorted.length)} items
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              ← Prev
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next →
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export function DeadStockSkeleton() {
   return (
-    <div className="rounded-xl border border-zuma-t4/30 bg-zuma-card p-4">
-      <div className="skeleton h-5 w-48 mb-4" />
+    <div className="rounded-xl border border-border bg-card p-4">
+      <Skeleton className="h-5 w-48 mb-4" />
       {[...Array(5)].map((_, i) => (
-        <div key={i} className="skeleton h-8 w-full mb-2" />
+        <Skeleton key={`dead-skel-${i}`} className="h-8 w-full mb-2" />
       ))}
     </div>
   );

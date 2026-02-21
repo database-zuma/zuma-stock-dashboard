@@ -3,6 +3,7 @@
 import "./ChartSetup";
 import { Bar } from "react-chartjs-2";
 import { fmtPairs } from "@/lib/format";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface SeriesRow {
   series: string;
@@ -12,6 +13,7 @@ interface SeriesRow {
 
 export default function SeriesBar({ data }: { data: SeriesRow[] }) {
   const reversed = [...data].reverse();
+  const len = reversed.length || 1;
 
   return (
     <div style={{ position: "relative", height: Math.max(350, data.length * 28) }}>
@@ -21,10 +23,10 @@ export default function SeriesBar({ data }: { data: SeriesRow[] }) {
           datasets: [
             {
               data: reversed.map((d) => d.pairs),
-              backgroundColor: reversed.map(
-                (_, i) =>
-                  `rgba(0, 226, 115, ${0.35 + (i / reversed.length) * 0.65})`
-              ),
+              backgroundColor: reversed.map((_, i) => {
+                const t = Math.round(210 - (i / len) * 180);
+                return `rgb(${t},${t},${t})`;
+              }),
               borderRadius: 3,
               borderSkipped: false,
               maxBarThickness: 24,
@@ -38,11 +40,11 @@ export default function SeriesBar({ data }: { data: SeriesRow[] }) {
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: "#0A3D50",
-              borderColor: "rgba(255,255,255,0.1)",
+              backgroundColor: "rgba(255,255,255,0.95)",
+              borderColor: "rgba(0,0,0,0.08)",
               borderWidth: 1,
-              titleColor: "#fff",
-              bodyColor: "#8CA3AD",
+              titleColor: "#000000",
+              bodyColor: "#666666",
               padding: 10,
               callbacks: {
                 label: (ctx) => {
@@ -54,7 +56,7 @@ export default function SeriesBar({ data }: { data: SeriesRow[] }) {
           },
           scales: {
             x: {
-              grid: { color: "rgba(255,255,255,0.04)" },
+              grid: { color: "rgba(0,0,0,0.04)" },
               ticks: {
                 callback: (v) => {
                   const n = Number(v);
@@ -77,7 +79,7 @@ export function SeriesBarSkeleton() {
   return (
     <div className="flex flex-col gap-2 p-4">
       {[...Array(10)].map((_, i) => (
-        <div key={i} className="skeleton h-5" style={{ width: `${90 - i * 5}%` }} />
+        <Skeleton key={i} className="h-5" style={{ width: `${90 - i * 5}%` }} />
       ))}
     </div>
   );

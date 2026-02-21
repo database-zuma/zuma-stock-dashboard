@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface KPICardProps {
   title: string;
@@ -49,45 +51,45 @@ export default function KPICard({
   }, [value, formatter]);
 
   return (
-    <div
+    <Card
       ref={ref}
-      className={`relative overflow-hidden rounded-xl p-5 border transition-all duration-300
-        hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)]
-        ${
-          accent
-            ? "bg-zuma-card border-l-[3px] border-l-zuma-accent border-zuma-border card-glow-accent"
-            : "bg-zuma-card border-zuma-border card-glow"
-        }`}
+      className={`relative overflow-hidden py-0 transition-all duration-300
+        hover:-translate-y-0.5 hover:shadow-md
+        ${accent ? "border-l-[3px] border-l-foreground" : ""}`}
     >
-      <div className="flex items-start justify-between">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs uppercase tracking-wider text-zuma-muted font-medium mb-2">
-            {title}
-          </p>
-          <p className="text-2xl lg:text-3xl font-bold tabular-nums animate-count">
-            {display}
-          </p>
-          {subtitle && (
-            <p className="text-xs text-zuma-muted mt-1.5">{subtitle}</p>
-          )}
-        </div>
+      <CardHeader className="flex-row items-start justify-between gap-2 px-5 pt-5 pb-0">
+        <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+          {title}
+        </CardTitle>
         <div
-          className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
-            ${accent ? "bg-zuma-accent/15 text-zuma-accent" : "bg-white/5 text-zuma-muted"}`}
+          className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center
+            ${accent ? "bg-foreground/10 text-foreground" : "bg-muted text-muted-foreground"}`}
         >
           {icon}
         </div>
-      </div>
-    </div>
+      </CardHeader>
+      <CardContent className="px-5 pb-5 pt-1">
+        <p className="text-2xl lg:text-3xl font-bold tabular-nums text-card-foreground animate-count">
+          {display}
+        </p>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground mt-1.5">{subtitle}</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
 export function KPISkeleton() {
   return (
-    <div className="rounded-xl p-5 border border-zuma-border bg-zuma-card">
-      <div className="skeleton h-3 w-24 mb-3" />
-      <div className="skeleton h-8 w-32 mb-2" />
-      <div className="skeleton h-3 w-20" />
-    </div>
+    <Card className="py-0">
+      <CardHeader className="px-5 pt-5 pb-0">
+        <Skeleton className="h-3 w-24" />
+      </CardHeader>
+      <CardContent className="px-5 pb-5 pt-2 space-y-2">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-3 w-20" />
+      </CardContent>
+    </Card>
   );
 }
