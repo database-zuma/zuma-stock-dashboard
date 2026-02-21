@@ -1,26 +1,114 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --zuma-base: #002A3A;
+  --zuma-card: #0A3D50;
+  --zuma-card-hover: #0E4A60;
+  --zuma-accent: #00E273;
+  --zuma-accent-dim: rgba(0, 226, 115, 0.15);
+  --zuma-border: rgba(255, 255, 255, 0.07);
+  --zuma-text: #FFFFFF;
+  --zuma-muted: #8CA3AD;
+  --zuma-tier-t1: #00E273;
+  --zuma-tier-t2: #00B5C8;
+  --zuma-tier-t3: #8CA3AD;
+  --zuma-tier-t4: #FF8C42;
+  --zuma-tier-t5: #FF4D4D;
+  --zuma-tier-t8: #7B6FE8;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-zuma-base: #002A3A;
+  --color-zuma-card: #0A3D50;
+  --color-zuma-card-hover: #0E4A60;
+  --color-zuma-accent: #00E273;
+  --color-zuma-accent-dim: rgba(0, 226, 115, 0.15);
+  --color-zuma-border: rgba(255, 255, 255, 0.07);
+  --color-zuma-text: #FFFFFF;
+  --color-zuma-muted: #8CA3AD;
+  --color-zuma-t1: #00E273;
+  --color-zuma-t2: #00B5C8;
+  --color-zuma-t3: #8CA3AD;
+  --color-zuma-t4: #FF8C42;
+  --color-zuma-t5: #FF4D4D;
+  --color-zuma-t8: #7B6FE8;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--zuma-base);
+  color: var(--zuma-text);
+  font-family: system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 226, 115, 0.6); }
+  50% { box-shadow: 0 0 0 6px rgba(0, 226, 115, 0); }
+}
+
+.pulse-dot {
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-count {
+  animation: countUp 0.6s ease-out forwards;
+}
+
+.card-glow {
+  box-shadow: 0 0 20px rgba(0, 226, 115, 0.15);
+}
+
+.card-glow-accent {
+  box-shadow: 0 0 24px rgba(0, 226, 115, 0.3);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #FFFFFF 40%, #00E273 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: var(--zuma-base);
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--zuma-card-hover);
+  border-radius: 3px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--zuma-card) 25%, var(--zuma-card-hover) 50%, var(--zuma-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
