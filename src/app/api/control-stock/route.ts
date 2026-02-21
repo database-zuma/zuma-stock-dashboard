@@ -102,6 +102,8 @@ export async function GET(req: NextRequest) {
       total: Number(countRes.rows[0].total),
       page,
       limit,
+    }, {
+      headers: { "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600" },
     });
   } catch (e) {
     console.error("control-stock error:", e);

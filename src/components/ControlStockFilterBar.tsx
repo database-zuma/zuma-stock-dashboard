@@ -1,29 +1,30 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import useSWR from "swr";
 import { Search, X, ChevronDown, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { fetcher } from "@/lib/fetcher";
 
 interface CSOptions {
   genders: string[];
-  series:  string[];
-  colors:  string[];
-  tipes:   string[];
-  tiers:   string[];
-  sizes:   string[];
+  series: string[];
+  colors: string[];
+  tipes: string[];
+  tiers: string[];
+  sizes: string[];
 }
 
 export interface CSFilters {
   gender: string[];
   series: string[];
-  color:  string[];
-  tipe:   string[];
-  tier:   string[];
-  size:   string[];
-  q:      string;
+  color: string[];
+  tipe: string[];
+  tier: string[];
+  size: string[];
+  q: string;
 }
 
-// ─── MultiSelect (local state, no URL) ──────────────────────────────────────
 function MultiSelect({
   label,
   options,
@@ -102,7 +103,6 @@ function MultiSelect({
   );
 }
 
-// ─── ControlStockFilterBar ───────────────────────────────────────────────────
 export default function ControlStockFilterBar({
   filters,
   onChange,
@@ -110,16 +110,16 @@ export default function ControlStockFilterBar({
   filters: CSFilters;
   onChange: (f: CSFilters) => void;
 }) {
-  const [opts, setOpts] = useState<CSOptions | null>(null);
-  const debounceRef     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    fetch("/api/control-stock-filters").then((r) => r.json()).then(setOpts).catch(() => {});
-  }, []);
+  const { data: opts } = useSWR<CSOptions>("/api/control-stock-filters", fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 300000,
+  });
 
   const toggle = (key: keyof Omit<CSFilters, "q">, val: string) => {
     const current = filters[key];
-    const next    = current.includes(val) ? current.filter((v) => v !== val) : [...current, val];
+    const next = current.includes(val) ? current.filter((v) => v !== val) : [...current, val];
     onChange({ ...filters, [key]: next });
   };
   const clear = (key: keyof Omit<CSFilters, "q">) => onChange({ ...filters, [key]: [] });
@@ -142,7 +142,6 @@ export default function ControlStockFilterBar({
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      {/* Filter row */}
       <div className="flex gap-1.5 items-center w-full">
         <div className="flex-1 min-w-[90px]">
           <MultiSelect label="Gender" options={opts?.genders || []} selected={filters.gender}
@@ -153,21 +152,21 @@ export default function ControlStockFilterBar({
             onToggle={(v) => toggle("series", v)} onClear={() => clear("series")} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Color"  options={opts?.colors || []} selected={filters.color}
-            onToggle={(v) => toggle("color", v)}  onClear={() => clear("color")} />
+          <MultiSelect label="Color" options={opts?.colors || []} selected={filters.color}
+            onToggle={(v) => toggle("color", v)} onClear={() => clear("color")} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Tipe"   options={opts?.tipes || []} selected={filters.tipe}
-            onToggle={(v) => toggle("tipe", v)}   onClear={() => clear("tipe")} />
+          <MultiSelect label="Tipe" options={opts?.tipes || []} selected={filters.tipe}
+            onToggle={(v) => toggle("tipe", v)} onClear={() => clear("tipe")} />
         </div>
         <div className="flex-1 min-w-[80px]">
-          <MultiSelect label="Tier"   options={opts?.tiers || []} selected={filters.tier}
-            onToggle={(v) => toggle("tier", v)}   onClear={() => clear("tier")}
+          <MultiSelect label="Tier" options={opts?.tiers || []} selected={filters.tier}
+            onToggle={(v) => toggle("tier", v)} onClear={() => clear("tier")}
             renderOption={(t) => `T${t}`} />
         </div>
         <div className="flex-1 min-w-[80px]">
-          <MultiSelect label="Size"   options={opts?.sizes || []} selected={filters.size}
-            onToggle={(v) => toggle("size", v)}   onClear={() => clear("size")} />
+          <MultiSelect label="Size" options={opts?.sizes || []} selected={filters.size}
+            onToggle={(v) => toggle("size", v)} onClear={() => clear("size")} />
         </div>
         {hasFilters && (
           <button
@@ -182,7 +181,6 @@ export default function ControlStockFilterBar({
         )}
       </div>
 
-      {/* Search box */}
       <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5 pointer-events-none" />
         <Input

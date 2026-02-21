@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
       [like]
     );
     return NextResponse.json(
-      rows.map((r) => ({ kode: r.kode as string, article: r.article as string }))
+      rows.map((r) => ({ kode: r.kode as string, article: r.article as string })),
+      { headers: { "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600" } }
     );
   } catch (e) {
     console.error("autocomplete error:", e);

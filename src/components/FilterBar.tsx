@@ -2,25 +2,26 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import useSWR from "swr";
 import { Search, X, ChevronDown, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { fetcher } from "@/lib/fetcher";
 
 interface Options {
   categories: string[];
-  branches:   string[];
-  gudangs:    string[];
-  genders:    string[];
-  series:     string[];
-  colors:     string[];
-  tiers:      string[];
-  sizes:      string[];
+  branches: string[];
+  gudangs: string[];
+  genders: string[];
+  series: string[];
+  colors: string[];
+  tiers: string[];
+  sizes: string[];
 }
 
 interface AutocompleteItem { kode: string; article: string; }
 
 const FILTER_KEYS = ["category","branch","gudang","gender","series","color","tier","size","q"] as const;
 
-// ─── MultiSelect ────────────────────────────────────────────────────────────
 function MultiSelect({
   label,
   paramKey,
@@ -32,7 +33,7 @@ function MultiSelect({
   options: string[];
   renderOption?: (v: string) => string;
 }) {
-  const router       = useRouter();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -129,27 +130,25 @@ function MultiSelect({
   );
 }
 
-// ─── FilterBar ───────────────────────────────────────────────────────────────
 export default function FilterBar() {
-  const router       = useRouter();
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const [opts, setOpts]             = useState<Options | null>(null);
-  const [search, setSearch]         = useState(searchParams.get("q") || "");
-  const [autocomplete, setAc]       = useState<AutocompleteItem[]>([]);
-  const [showAc, setShowAc]         = useState(false);
-  const debounceRef                 = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const acDebounceRef               = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchRef                   = useRef<HTMLDivElement>(null);
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [autocomplete, setAc] = useState<AutocompleteItem[]>([]);
+  const [showAc, setShowAc] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const acDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetch("/api/filter-options").then((r) => r.json()).then(setOpts).catch(() => {});
-  }, []);
+  const { data: opts } = useSWR<Options>("/api/filter-options", fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 300000,
+  });
 
   useEffect(() => {
     setSearch(searchParams.get("q") || "");
   }, [searchParams]);
 
-  // Close autocomplete on outside click
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -164,7 +163,6 @@ export default function FilterBar() {
     (val: string) => {
       setSearch(val);
 
-      // Debounce URL update
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         const params = new URLSearchParams(searchParams.toString());
@@ -174,7 +172,6 @@ export default function FilterBar() {
         router.push(`/?${params.toString()}`);
       }, 400);
 
-      // Debounce autocomplete fetch
       if (acDebounceRef.current) clearTimeout(acDebounceRef.current);
       if (val.trim().length >= 1) {
         acDebounceRef.current = setTimeout(() => {
@@ -217,25 +214,24 @@ export default function FilterBar() {
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      {/* Filter row – fills width */}
       <div className="flex gap-1.5 items-center w-full">
         <div className="flex-1 min-w-[90px]">
           <MultiSelect label="Category" paramKey="category" options={opts?.categories || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Branch"   paramKey="branch"   options={opts?.branches   || []} />
+          <MultiSelect label="Branch" paramKey="branch" options={opts?.branches || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Gudang"   paramKey="gudang"   options={opts?.gudangs    || []} />
+          <MultiSelect label="Gudang" paramKey="gudang" options={opts?.gudangs || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Gender"   paramKey="gender"   options={opts?.genders    || []} />
+          <MultiSelect label="Gender" paramKey="gender" options={opts?.genders || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Series"   paramKey="series"   options={opts?.series     || []} />
+          <MultiSelect label="Series" paramKey="series" options={opts?.series || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Color"    paramKey="color"    options={opts?.colors     || []} />
+          <MultiSelect label="Color" paramKey="color" options={opts?.colors || []} />
         </div>
         <div className="flex-1 min-w-[80px]">
           <MultiSelect
@@ -245,7 +241,7 @@ export default function FilterBar() {
           />
         </div>
         <div className="flex-1 min-w-[80px]">
-          <MultiSelect label="Size"     paramKey="size"     options={opts?.sizes      || []} />
+          <MultiSelect label="Size" paramKey="size" options={opts?.sizes || []} />
         </div>
         {hasFilters && (
           <button
@@ -261,7 +257,6 @@ export default function FilterBar() {
         )}
       </div>
 
-      {/* Search box – full width with autocomplete */}
       <div ref={searchRef} className="relative w-full">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5 pointer-events-none z-10" />
         <Input
@@ -282,7 +277,6 @@ export default function FilterBar() {
           </button>
         )}
 
-        {/* Autocomplete dropdown */}
         {showAc && autocomplete.length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-56 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
             {autocomplete.map((item) => (

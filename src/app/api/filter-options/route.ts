@@ -27,6 +27,8 @@ export async function GET() {
       colors:     colorRes.rows.map((r) => r.val),
       tiers:      tierRes.rows.map((r) => r.val),
       sizes:      sizeRes.rows.map((r) => r.val),
+    }, {
+      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" },
     });
   } catch (e) {
     console.error("filter-options error:", e);

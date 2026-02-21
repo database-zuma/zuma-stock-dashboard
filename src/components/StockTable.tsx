@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import useSWR from "swr";
 import { fmtPairs, fmtRupiah } from "@/lib/format";
+import { fetcher } from "@/lib/fetcher";
 import TierBadge from "./TierBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,51 +18,48 @@ import {
 } from "@/components/ui/table";
 
 interface StockRow {
-  kode_besar:    string;
-  kode:          string;
-  article:       string;
-  series:        string;
-  gender_group:  string;
-  tipe:          string;
-  tier:          string;
-  branch:        string;
-  nama_gudang:   string;
-  group_warna:   string;
-  ukuran:        string;
-  pairs:         number;
+  kode_besar: string;
+  kode: string;
+  article: string;
+  series: string;
+  gender_group: string;
+  tipe: string;
+  tier: string;
+  branch: string;
+  nama_gudang: string;
+  group_warna: string;
+  ukuran: string;
+  pairs: number;
   est_rsp_value: number;
 }
 
 interface TableData {
-  rows:  StockRow[];
+  rows: StockRow[];
   total: number;
-  page:  number;
+  page: number;
   limit: number;
 }
 
 export default function StockTable() {
   const searchParams = useSearchParams();
-  const [data, setData]       = useState<TableData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage]       = useState(1);
+  const filterKey = searchParams.toString();
+  const [page, setPage] = useState(1);
   const limit = 20;
 
-  const fetchData = useCallback(
-    (p: number) => {
-      setLoading(true);
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("page",  String(p));
-      params.set("limit", String(limit));
-      fetch(`/api/stock-table?${params}`)
-        .then((r) => r.json())
-        .then((d) => { setData(d); setLoading(false); })
-        .catch(() => setLoading(false));
-    },
-    [searchParams]
-  );
+  useEffect(() => { setPage(1); }, [filterKey]);
 
-  useEffect(() => { setPage(1); fetchData(1); }, [fetchData]);
-  useEffect(() => { fetchData(page); }, [page, fetchData]);
+  const swrKey = useMemo(() => {
+    const params = new URLSearchParams(filterKey);
+    params.set("page", String(page));
+    params.set("limit", String(limit));
+    return `/api/stock-table?${params}`;
+  }, [filterKey, page, limit]);
+
+  const { data, isLoading } = useSWR<TableData>(swrKey, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+    keepPreviousData: true,
+  });
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
 
@@ -93,7 +92,7 @@ export default function StockTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {isLoading && !data ? (
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={`skel-${i}`} className="border-b border-border/50">
                   {Array.from({ length: 13 }).map((_, j) => (
@@ -106,7 +105,7 @@ export default function StockTable() {
             ) : (
               (data?.rows || []).map((row) => (
                 <TableRow
-                  key={`${row.kode_besar}|${row.nama_gudang}`}
+                  key={`${row.kode_besar}|${row.nama_gudang}|${row.ukuran}`}
                   className="border-b border-border/40 hover:bg-muted/20 transition-colors"
                 >
                   <TableCell className="px-4 py-2.5 font-medium text-sm truncate max-w-[180px]">
@@ -137,7 +136,7 @@ export default function StockTable() {
         </Table>
       </div>
 
-      {!loading && totalPages > 1 && (
+      {!isLoading && totalPages > 1 && (
         <div className="px-5 py-3 border-t border-border flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
             Page {page} of {fmtPairs(totalPages)} · {fmtPairs(data?.total || 0)} rows

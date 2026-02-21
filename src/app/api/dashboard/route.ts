@@ -55,44 +55,44 @@ export async function GET(req: NextRequest) {
              MAX(snapshot_date)                                     AS snapshot_date
       FROM base
     ),
-    by_branch AS (
+    by_retail AS (
       SELECT
         CASE
-          WHEN nama_gudang ILIKE 'Warehouse Pusat%'                         THEN 'Warehouse Pusat'
-          WHEN nama_gudang ILIKE 'Warehouse Bali%'
-            OR nama_gudang = 'Warehouse Online Bali'                        THEN 'Warehouse Bali'
-          WHEN nama_gudang ILIKE 'Warehouse Online Jakarta'
-            OR nama_gudang ILIKE 'Warehouse Pluit%'                         THEN 'Warehouse Jakarta'
-          WHEN branch = 'Bali'                                              THEN 'Bali'
-          WHEN branch = 'Jatim'                                             THEN 'Jatim'
-          WHEN branch = 'Jakarta'                                           THEN 'Jakarta'
-          WHEN branch IN ('Sumatra','Sumatera')                             THEN 'Sumatera'
-          WHEN branch = 'Batam'                                             THEN 'Batam'
-          WHEN branch = 'Sulawesi'                                          THEN 'Sulawesi'
-          WHEN branch = 'Lombok'                                            THEN 'Lombok'
+          WHEN branch = 'Bali'                    THEN 'Bali'
+          WHEN branch = 'Jatim'                   THEN 'Jatim'
+          WHEN branch = 'Jakarta'                 THEN 'Jakarta'
+          WHEN branch IN ('Sumatra','Sumatera')   THEN 'Sumatera'
+          WHEN branch = 'Batam'                   THEN 'Batam'
+          WHEN branch = 'Sulawesi'                THEN 'Sulawesi'
+          WHEN branch = 'Lombok'                  THEN 'Lombok'
           ELSE NULL
         END AS branch,
         gender_group,
         SUM(pairs) AS pairs
       FROM base
+      WHERE nama_gudang NOT ILIKE '%warehouse%'
       GROUP BY 1, gender_group
       HAVING (
         CASE
-          WHEN nama_gudang ILIKE 'Warehouse Pusat%'                         THEN 'Warehouse Pusat'
-          WHEN nama_gudang ILIKE 'Warehouse Bali%'
-            OR nama_gudang = 'Warehouse Online Bali'                        THEN 'Warehouse Bali'
-          WHEN nama_gudang ILIKE 'Warehouse Online Jakarta'
-            OR nama_gudang ILIKE 'Warehouse Pluit%'                         THEN 'Warehouse Jakarta'
-          WHEN branch = 'Bali'                                              THEN 'Bali'
-          WHEN branch = 'Jatim'                                             THEN 'Jatim'
-          WHEN branch = 'Jakarta'                                           THEN 'Jakarta'
-          WHEN branch IN ('Sumatra','Sumatera')                             THEN 'Sumatera'
-          WHEN branch = 'Batam'                                             THEN 'Batam'
-          WHEN branch = 'Sulawesi'                                          THEN 'Sulawesi'
-          WHEN branch = 'Lombok'                                            THEN 'Lombok'
+          WHEN branch = 'Bali'                    THEN 'Bali'
+          WHEN branch = 'Jatim'                   THEN 'Jatim'
+          WHEN branch = 'Jakarta'                 THEN 'Jakarta'
+          WHEN branch IN ('Sumatra','Sumatera')   THEN 'Sumatera'
+          WHEN branch = 'Batam'                   THEN 'Batam'
+          WHEN branch = 'Sulawesi'                THEN 'Sulawesi'
+          WHEN branch = 'Lombok'                  THEN 'Lombok'
           ELSE NULL
         END
       ) IS NOT NULL
+    ),
+    by_warehouse AS (
+      SELECT
+        nama_gudang AS branch,
+        gender_group,
+        SUM(pairs) AS pairs
+      FROM base
+      WHERE nama_gudang ILIKE '%warehouse%'
+      GROUP BY nama_gudang, gender_group
     ),
     by_tipe AS (
       SELECT tipe, SUM(pairs) AS pairs
@@ -117,7 +117,8 @@ export async function GET(req: NextRequest) {
     )
     SELECT
       (SELECT row_to_json(k)         FROM kpis k)       AS kpis,
-      (SELECT json_agg(b)            FROM by_branch b)   AS by_branch,
+      (SELECT json_agg(r)            FROM by_retail r)    AS by_retail,
+      (SELECT json_agg(w)            FROM by_warehouse w) AS by_warehouse,
       (SELECT json_agg(tp)           FROM by_tipe tp)    AS by_tipe,
       (SELECT json_agg(t)            FROM by_tier t)     AS by_tier,
       (SELECT json_agg(s ORDER BY
@@ -133,7 +134,7 @@ export async function GET(req: NextRequest) {
     const { rows } = await pool.query(sql, values as string[]);
     const r = rows[0];
     const k = r.kpis as Record<string, unknown>;
-    return NextResponse.json({
+    const body = {
       kpis: {
         total_pairs:      Number(k?.total_pairs)      || 0,
         unique_articles:  Number(k?.unique_articles)  || 0,
@@ -141,7 +142,10 @@ export async function GET(req: NextRequest) {
         est_rsp_value:    Number(k?.est_rsp_value)    || 0,
         snapshot_date:    k?.snapshot_date,
       },
-      by_branch: (r.by_branch || []).map((b: Record<string, unknown>) => ({
+      by_retail: (r.by_retail || []).map((b: Record<string, unknown>) => ({
+        branch: b.branch, gender_group: b.gender_group, pairs: Number(b.pairs),
+      })),
+      by_warehouse: (r.by_warehouse || []).map((b: Record<string, unknown>) => ({
         branch: b.branch, gender_group: b.gender_group, pairs: Number(b.pairs),
       })),
       by_tipe: (r.by_tipe || []).map((tp: Record<string, unknown>) => ({
@@ -153,6 +157,9 @@ export async function GET(req: NextRequest) {
       by_size: (r.by_size || []).map((s: Record<string, unknown>) => ({
         ukuran: s.ukuran, pairs: Number(s.pairs),
       })),
+    };
+    return NextResponse.json(body, {
+      headers: { "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600" },
     });
   } catch (e) {
     console.error("dashboard error:", e);

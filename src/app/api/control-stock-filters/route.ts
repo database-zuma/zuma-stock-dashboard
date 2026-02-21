@@ -26,6 +26,8 @@ export async function GET() {
       tipes:   tipeRes.rows.map((r) => r.val),
       tiers:   tierRes.rows.map((r) => r.val),
       sizes:   sizeRes.rows.map((r) => r.val),
+    }, {
+      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" },
     });
   } catch (e) {
     console.error("control-stock-filters error:", e);
