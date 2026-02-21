@@ -17,12 +17,16 @@ import { useState, useMemo } from "react";
 const PAGE_SIZE = 25;
 
 interface DeadStockRow {
-  kode_mix: string;
+  kode_besar: string;
+  kode: string;
   article: string;
   series: string;
   gender_group: string;
   branch: string;
+  nama_gudang: string;
   tier: string;
+  group_warna: string;
+  ukuran: string;
   pairs: number;
   est_rsp_value: number;
 }
@@ -92,11 +96,11 @@ export default function DeadStockTable({ data }: { data: DeadStockRow[] }) {
         <TableBody>
           {paged.map((row, i) => (
             <TableRow
-              key={`${row.kode_mix}-${row.branch}-${i}`}
+              key={`${row.kode_besar}|${row.nama_gudang}`}
               className={i % 2 === 0 ? "bg-card" : "bg-muted/30"}
             >
               <TableCell className="px-4 py-2.5 font-medium truncate max-w-[200px]">
-                {row.article || row.kode_mix}
+                {row.article || row.kode_besar}
               </TableCell>
               <TableCell className="px-4 py-2.5 text-muted-foreground">{row.series || "—"}</TableCell>
               <TableCell className="px-4 py-2.5 text-muted-foreground">{row.gender_group}</TableCell>

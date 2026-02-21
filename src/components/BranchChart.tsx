@@ -6,29 +6,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface BranchRow {
   branch: string;
-  tier: string;
+  gender_group: string;
   pairs: number;
 }
 
-const TIER_ORDER = ["1", "2", "3", "4", "5", "8", "0"];
-const TIER_NAMES: Record<string, string> = {
-  "1": "T1",
-  "2": "T2",
-  "3": "T3",
-  "4": "T4",
-  "5": "T5",
-  "8": "T8",
-  "0": "T0",
-};
+const GENDER_ORDER = ["Men", "Ladies", "Baby & Kids", "Unknown"];
 
-const MONO_TIER: Record<string, string> = {
-  "1": "#00E273",
-  "2": "#1A1A18",
-  "3": "#5D625A",
-  "4": "#A9A69F",
-  "5": "#E3E3DE",
-  "8": "#F5F5F0",
-  "0": "#1A1A18",
+const GENDER_COLORS: Record<string, string> = {
+  "Men":         "#00E273",
+  "Ladies":      "#1A1A18",
+  "Baby & Kids": "#5D625A",
+  "Unknown":     "#C8C5BE",
 };
 
 export default function BranchChart({ data }: { data: BranchRow[] }) {
@@ -40,13 +28,19 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
   });
   branches.sort((a, b) => (branchTotals.get(b) || 0) - (branchTotals.get(a) || 0));
 
-  const datasets = TIER_ORDER.map((tier) => ({
-    label: TIER_NAMES[tier],
+  const allGenders = [...new Set(data.map((d) => d.gender_group))];
+  const orderedGenders = [
+    ...GENDER_ORDER.filter((g) => allGenders.includes(g)),
+    ...allGenders.filter((g) => !GENDER_ORDER.includes(g)),
+  ];
+
+  const datasets = orderedGenders.map((gender) => ({
+    label: gender,
     data: branches.map((b) => {
-      const row = data.find((d) => d.branch === b && d.tier === tier);
+      const row = data.find((d) => d.branch === b && d.gender_group === gender);
       return row ? row.pairs : 0;
     }),
-    backgroundColor: MONO_TIER[tier],
+    backgroundColor: GENDER_COLORS[gender] || "#999999",
     borderRadius: 3,
     borderSkipped: false as const,
   }));
@@ -106,7 +100,7 @@ export function BranchChartSkeleton() {
   return (
     <div className="flex flex-col gap-3 p-4" style={{ minHeight: 280 }}>
       {[...Array(6)].map((_, i) => (
-        <Skeleton key={i} className="h-6" style={{ width: `${80 - i * 8}%` }} />
+        <Skeleton key={`bcs-${i}`} className="h-6" style={{ width: `${80 - i * 8}%` }} />
       ))}
     </div>
   );

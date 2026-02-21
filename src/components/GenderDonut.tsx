@@ -5,32 +5,28 @@ import { Doughnut } from "react-chartjs-2";
 import { fmtPairs } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface GenderRow {
-  gender_group: string;
+interface TipeRow {
+  tipe: string;
   pairs: number;
 }
 
-const GENDER_MONO: Record<string, string> = {
-  Men: "#00E273",
-  Ladies: "#1A1A18",
-  "Baby & Kids": "#5D625A",
-  Unknown: "#A9A69F",
+const TIPE_COLORS: Record<string, string> = {
+  Fashion: "#00E273",
+  Jepit:   "#1A1A18",
 };
 
-export default function GenderDonut({ data }: { data: GenderRow[] }) {
+export default function TipeDonut({ data }: { data: TipeRow[] }) {
   const total = data.reduce((s, d) => s + d.pairs, 0);
 
   return (
     <div className="relative flex flex-col items-center" style={{ height: 220 }}>
       <Doughnut
         data={{
-          labels: data.map((d) => d.gender_group),
+          labels: data.map((d) => d.tipe),
           datasets: [
             {
               data: data.map((d) => d.pairs),
-              backgroundColor: data.map(
-                (d) => GENDER_MONO[d.gender_group] || "#999999"
-              ),
+              backgroundColor: data.map((d) => TIPE_COLORS[d.tipe] || "#999999"),
               borderWidth: 2,
               borderColor: "#ffffff",
               hoverOffset: 6,
@@ -77,7 +73,7 @@ export default function GenderDonut({ data }: { data: GenderRow[] }) {
   );
 }
 
-export function GenderDonutSkeleton() {
+export function TipeDonutSkeleton() {
   return (
     <div className="flex items-center justify-center" style={{ height: 220 }}>
       <Skeleton className="w-36 h-36 rounded-full" />
