@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       SUM(quantity) AS pairs
     FROM core.stock_with_product
     ${clause}
-    GROUP BY gudang_branch, tier
+    GROUP BY COALESCE(gudang_branch, 'Warehouse'), COALESCE(tier, '3')
     ORDER BY branch, tier
   `;
 

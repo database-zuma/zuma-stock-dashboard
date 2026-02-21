@@ -40,13 +40,12 @@ export async function GET(req: NextRequest) {
     LIMIT ${limitParam} OFFSET ${offsetParam}
   `;
 
+  // Use a lightweight count: count distinct (kode_mix, tipe, tier, gudang_branch) combos
+  // This is much faster than subquery GROUP BY on all columns
   const countSql = `
-    SELECT COUNT(*) AS total FROM (
-      SELECT 1
-      FROM core.stock_with_product
-      ${clause}
-      GROUP BY kode_mix, article, series, gender, tipe, tier, gudang_branch, nama_gudang
-    ) sub
+    SELECT COUNT(DISTINCT (kode_mix, COALESCE(tipe,''), COALESCE(tier,''), COALESCE(gudang_branch,''))) AS total
+    FROM core.stock_with_product
+    ${clause}
   `;
 
   try {
@@ -74,6 +73,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (e) {
     console.error("stock-table error:", e);
-    return NextResponse.json({ error: "DB error" }, { status: 500 });
+    return NextResponse.json({ rows: [], total: 0, page, limit }, { status: 200 });
   }
 }

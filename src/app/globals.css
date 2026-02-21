@@ -101,6 +101,10 @@ body {
   border-radius: 3px;
 }
 
+canvas {
+  background: transparent !important;
+}
+
 .skeleton {
   background: linear-gradient(90deg, var(--zuma-card) 25%, var(--zuma-card-hover) 50%, var(--zuma-card) 75%);
   background-size: 200% 100%;

@@ -59,7 +59,7 @@ export default function StockTable() {
     fetchData(page);
   }, [page, fetchData]);
 
-  const filtered = data?.rows.filter((r) => {
+  const filtered = data?.rows?.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (

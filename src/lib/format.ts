@@ -16,6 +16,7 @@ export function fmtRupiah(n: number): string {
 }
 
 export const TIER_COLORS: Record<string, string> = {
+  "0": "#4A6670",
   "1": "#00E273",
   "2": "#00B5C8",
   "3": "#8CA3AD",
@@ -25,6 +26,7 @@ export const TIER_COLORS: Record<string, string> = {
 };
 
 export const TIER_LABELS: Record<string, string> = {
+  "0": "T0 · Unassigned",
   "1": "T1 · Fast",
   "2": "T2 · Secondary",
   "3": "T3 · Mid",

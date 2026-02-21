@@ -10,7 +10,7 @@ interface BranchRow {
   pairs: number;
 }
 
-const TIER_ORDER = ["1", "2", "3", "4", "5", "8"];
+const TIER_ORDER = ["1", "2", "3", "4", "5", "8", "0"];
 const TIER_NAMES: Record<string, string> = {
   "1": "T1",
   "2": "T2",
@@ -18,6 +18,7 @@ const TIER_NAMES: Record<string, string> = {
   "4": "T4",
   "5": "T5",
   "8": "T8",
+  "0": "T0",
 };
 
 export default function BranchChart({ data }: { data: BranchRow[] }) {
