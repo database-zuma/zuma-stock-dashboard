@@ -54,6 +54,22 @@ function MultiSelect({
     [options, dropdownSearch]
   );
 
+  const allSelected =
+    filteredOptions.length > 0 &&
+    filteredOptions.every((o) => selected.includes(o));
+
+  const toggleSelectAll = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (allSelected) {
+      params.delete(paramKey);
+    } else {
+      const merged = [...new Set([...selected, ...filteredOptions])];
+      params.set(paramKey, merged.join(","));
+    }
+    params.delete("page");
+    router.push(`/?${params.toString()}`);
+  }, [router, searchParams, paramKey, selected, filteredOptions, allSelected]);
+
   const toggleOption = useCallback(
     (opt: string) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -129,6 +145,21 @@ function MultiSelect({
           </div>
 
           <div className="max-h-56 overflow-y-auto">
+            {filteredOptions.length > 0 && (
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors border-b border-border"
+              >
+                <span
+                  className={`size-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors
+                    ${allSelected ? "bg-[#00E273] border-[#00E273]" : "border-border bg-background"}`}
+                >
+                  {allSelected && <Check className="size-2.5 text-black stroke-[3]" />}
+                </span>
+                <span className="text-muted-foreground">Select All</span>
+              </button>
+            )}
             {selected.length > 0 && (
               <button
                 type="button"

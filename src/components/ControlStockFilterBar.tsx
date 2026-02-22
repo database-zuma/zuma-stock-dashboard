@@ -32,6 +32,7 @@ function MultiSelect({
   selected,
   onToggle,
   onClear,
+  onSelectAll,
   renderOption,
 }: {
   label: string;
@@ -39,6 +40,7 @@ function MultiSelect({
   selected: string[];
   onToggle: (v: string) => void;
   onClear: () => void;
+  onSelectAll: (opts: string[]) => void;
   renderOption?: (v: string) => string;
 }) {
   const [open, setOpen] = useState(false);
@@ -56,6 +58,9 @@ function MultiSelect({
     [options, dropdownSearch]
   );
 
+  const allSelected =
+    filteredOptions.length > 0 &&
+    filteredOptions.every((o) => selected.includes(o));
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -108,6 +113,21 @@ function MultiSelect({
           </div>
 
           <div className="max-h-56 overflow-y-auto">
+            {filteredOptions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onSelectAll(filteredOptions)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors border-b border-border"
+              >
+                <span
+                  className={`size-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors
+                    ${allSelected ? "bg-[#00E273] border-[#00E273]" : "border-border bg-background"}`}
+                >
+                  {allSelected && <Check className="size-2.5 text-black stroke-[3]" />}
+                </span>
+                <span className="text-muted-foreground">Select All</span>
+              </button>
+            )}
             {selected.length > 0 && (
               <button
                 type="button"
@@ -182,6 +202,16 @@ export default function ControlStockFilterBar({
   };
   const clear = (key: keyof Omit<CSFilters, "q">) => onChange({ ...filters, [key]: [] });
 
+  const selectAll = (key: keyof Omit<CSFilters, "q">, opts: string[]) => {
+    const current = filters[key];
+    const allSelected = opts.every((o) => current.includes(o));
+    if (allSelected) {
+      onChange({ ...filters, [key]: [] });
+    } else {
+      onChange({ ...filters, [key]: [...new Set([...current, ...opts])] });
+    }
+  };
+
   /* FIX: read value from DOM (e.currentTarget.value) to avoid stale closure */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -209,28 +239,28 @@ export default function ControlStockFilterBar({
       <div className="flex gap-1.5 items-center w-full">
         <div className="flex-1 min-w-[90px]">
           <MultiSelect label="GENDER" options={opts?.genders || []} selected={filters.gender}
-            onToggle={(v) => toggle("gender", v)} onClear={() => clear("gender")} />
+            onToggle={(v) => toggle("gender", v)} onClear={() => clear("gender")} onSelectAll={(o) => selectAll("gender", o)} />
         </div>
         <div className="flex-1 min-w-[90px]">
           <MultiSelect label="SERIES" options={opts?.series || []} selected={filters.series}
-            onToggle={(v) => toggle("series", v)} onClear={() => clear("series")} />
+            onToggle={(v) => toggle("series", v)} onClear={() => clear("series")} onSelectAll={(o) => selectAll("series", o)} />
         </div>
         <div className="flex-1 min-w-[90px]">
           <MultiSelect label="COLOR" options={opts?.colors || []} selected={filters.color}
-            onToggle={(v) => toggle("color", v)} onClear={() => clear("color")} />
+            onToggle={(v) => toggle("color", v)} onClear={() => clear("color")} onSelectAll={(o) => selectAll("color", o)} />
         </div>
         <div className="flex-1 min-w-[90px]">
           <MultiSelect label="TIPE" options={opts?.tipes || []} selected={filters.tipe}
-            onToggle={(v) => toggle("tipe", v)} onClear={() => clear("tipe")} />
+            onToggle={(v) => toggle("tipe", v)} onClear={() => clear("tipe")} onSelectAll={(o) => selectAll("tipe", o)} />
         </div>
         <div className="flex-1 min-w-[80px]">
           <MultiSelect label="TIER" options={opts?.tiers || []} selected={filters.tier}
-            onToggle={(v) => toggle("tier", v)} onClear={() => clear("tier")}
+            onToggle={(v) => toggle("tier", v)} onClear={() => clear("tier")} onSelectAll={(o) => selectAll("tier", o)}
             renderOption={(t) => `T${t}`} />
         </div>
         <div className="flex-1 min-w-[80px]">
           <MultiSelect label="SIZE" options={opts?.sizes || []} selected={filters.size}
-            onToggle={(v) => toggle("size", v)} onClear={() => clear("size")} />
+            onToggle={(v) => toggle("size", v)} onClear={() => clear("size")} onSelectAll={(o) => selectAll("size", o)} />
         </div>
         {hasFilters && (
           <button
