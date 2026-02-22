@@ -55,14 +55,29 @@ function fmtAvg(n: number) {
   return n > 0 ? n.toFixed(1) : "—";
 }
 
-const filterKey = (f: CSFilters) => JSON.stringify(f);
-
 export default function ControlStockTable({ filters }: { filters: CSFilters }) {
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState("stok_global");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const limit = 20;
-  const fKey = filterKey(filters);
+  const fKey = JSON.stringify(filters);
 
   useEffect(() => { setPage(1); }, [fKey]);
+
+  const handleSort = (key: string) => {
+    if (sortBy === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      setSortDir("asc");
+    }
+    setPage(1);
+  };
+
+  const sortIcon = (key: string) => {
+    if (sortBy !== key) return <span className="ml-0.5 text-[10px] text-muted-foreground/30">↕</span>;
+    return <span className="ml-0.5 text-[10px] text-[#00E273]">{sortDir === "asc" ? "↑" : "↓"}</span>;
+  };
 
   const swrUrl = useMemo(() => {
     const params = new URLSearchParams();
@@ -75,8 +90,10 @@ export default function ControlStockTable({ filters }: { filters: CSFilters }) {
     if (filters.q)             params.set("q", filters.q);
     params.set("page", String(page));
     params.set("limit", String(limit));
+    params.set("sort", sortBy);
+    params.set("dir", sortDir);
     return `/api/control-stock?${params}`;
-  }, [filters, page, limit]);
+  }, [filters, page, limit, sortBy, sortDir]);
 
   const { data, isLoading } = useSWR<TableData>(swrUrl, fetcher, {
     revalidateOnFocus: false,
@@ -85,6 +102,9 @@ export default function ControlStockTable({ filters }: { filters: CSFilters }) {
   });
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
+
+  const thClass = "text-xs uppercase tracking-wider text-muted-foreground px-4 cursor-pointer select-none hover:text-foreground transition-colors";
+  const thRight = `${thClass} text-right`;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -99,33 +119,71 @@ export default function ControlStockTable({ filters }: { filters: CSFilters }) {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-border hover:bg-transparent">
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Kode Besar</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Kode Kecil</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Gender</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Series</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Color</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Tipe</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Tier</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Size</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">Stok Global</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">WH Pusat</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">WH Bali</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">WH JKT</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">Toko</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">Online</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">Avg 3M</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">TO WH</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">TO Total</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">YTD Sales</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">LY Sales</TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("kode_besar")}>
+                <span className="inline-flex items-center">Kode Besar {sortIcon("kode_besar")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("kode_kecil")}>
+                <span className="inline-flex items-center">Kode Kecil {sortIcon("kode_kecil")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("gender")}>
+                <span className="inline-flex items-center">Gender {sortIcon("gender")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("series")}>
+                <span className="inline-flex items-center">Series {sortIcon("series")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("color")}>
+                <span className="inline-flex items-center">Color {sortIcon("color")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("tipe")}>
+                <span className="inline-flex items-center">Tipe {sortIcon("tipe")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("tier")}>
+                <span className="inline-flex items-center">Tier {sortIcon("tier")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("size")}>
+                <span className="inline-flex items-center">Size {sortIcon("size")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("stok_global")}>
+                <span className="inline-flex items-center justify-end">Stok Global {sortIcon("stok_global")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("wh_pusat")}>
+                <span className="inline-flex items-center justify-end">WH Pusat {sortIcon("wh_pusat")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("wh_bali")}>
+                <span className="inline-flex items-center justify-end">WH Bali {sortIcon("wh_bali")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("wh_jkt")}>
+                <span className="inline-flex items-center justify-end">WH JKT {sortIcon("wh_jkt")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("stok_toko")}>
+                <span className="inline-flex items-center justify-end">Toko {sortIcon("stok_toko")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("stok_online")}>
+                <span className="inline-flex items-center justify-end">Online {sortIcon("stok_online")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("avg_last_3_months")}>
+                <span className="inline-flex items-center justify-end">Avg 3M {sortIcon("avg_last_3_months")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("to_wh")}>
+                <span className="inline-flex items-center justify-end">TO WH {sortIcon("to_wh")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("to_total")}>
+                <span className="inline-flex items-center justify-end">TO Total {sortIcon("to_total")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("current_year_qty")}>
+                <span className="inline-flex items-center justify-end">YTD Sales {sortIcon("current_year_qty")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("last_year_qty")}>
+                <span className="inline-flex items-center justify-end">LY Sales {sortIcon("last_year_qty")}</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && !data ? (
               Array.from({ length: 10 }).map((_, i) => (
-                <TableRow key={`cs-skel-${i}`} className="border-b border-border/50">
+                <TableRow key={`cs-skel-${String(i)}`} className="border-b border-border/50">
                   {Array.from({ length: 19 }).map((_, j) => (
-                    <TableCell key={`cs-skel-c-${j}`} className="px-4 py-2.5">
+                    <TableCell key={`cs-skel-c-${String(j)}`} className="px-4 py-2.5">
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
                   ))}

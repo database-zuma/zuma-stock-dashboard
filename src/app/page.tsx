@@ -15,7 +15,7 @@ import ControlStockFilterBar, { type CSFilters } from "@/components/ControlStock
 import ControlStockTable from "@/components/ControlStockTable";
 import { fmtPairs, fmtRupiah } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
-import { LayoutDashboard, Table2, Menu } from "lucide-react";
+import { LayoutDashboard, Table2, Menu, ChevronsLeft } from "lucide-react";
 
 interface KPIData {
   total_pairs: number;
@@ -38,7 +38,7 @@ const DEFAULT_CS: CSFilters = {
 
 const NAV_ITEMS: { id: Page; label: string; source: string }[] = [
   { id: "dashboard", label: "Dashboard Cache", source: "core.dashboard_cache" },
-  { id: "control",   label: "SKU Portfolio",   source: "mart.sku_portfolio_size" },
+  { id: "control",   label: "Control Stock",   source: "mart.sku_portfolio_size" },
 ];
 
 function DashboardContent() {
@@ -48,6 +48,7 @@ function DashboardContent() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [csFilters, setCsFilters] = useState<CSFilters>(DEFAULT_CS);
   const [mobileNav, setMobileNav] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
 
   /* ── SWR: dashboard data (only fetched when on dashboard page) ── */
   const { data: dash } = useSWR(
@@ -76,14 +77,28 @@ function DashboardContent() {
 
       {/* ── Sidebar ───────────────────────────────────────────── */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-56 flex-shrink-0
+        className={`fixed lg:sticky top-0 left-0 z-50 h-screen flex-shrink-0
           border-r border-border bg-card flex flex-col
-          transition-transform duration-200 lg:translate-x-0
-          ${mobileNav ? "translate-x-0" : "-translate-x-full"}`}
+          transition-all duration-200 lg:translate-x-0
+          ${sidebarHidden ? "lg:w-14 lg:min-w-[3.5rem]" : "w-56"}
+          ${mobileNav ? "translate-x-0 w-56" : "-translate-x-full lg:translate-x-0"}`}
       >
-        <div className="px-5 py-5 border-b border-border">
-          <h1 className="text-base font-semibold tracking-tight">Stock Dashboard</h1>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Zuma Indonesia</p>
+        <div className={`px-5 py-5 border-b border-border ${sidebarHidden ? "lg:px-2 lg:py-4 lg:flex lg:justify-center" : ""}`}>
+          {sidebarHidden ? (
+            <span className="hidden lg:block text-base font-bold text-[#00E273]">Z</span>
+          ) : (
+            <>
+              <h1 className="text-base font-semibold tracking-tight">Stock Dashboard</h1>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Zuma Indonesia</p>
+            </>
+          )}
+          {/* Mobile: always show full header when sidebar is collapsed on desktop */}
+          {sidebarHidden && (
+            <div className="lg:hidden">
+              <h1 className="text-base font-semibold tracking-tight">Stock Dashboard</h1>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Zuma Indonesia</p>
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
@@ -94,8 +109,9 @@ function DashboardContent() {
               onClick={() => { setActivePage(item.id); setMobileNav(false); }}
               className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors group
                 ${activePage === item.id ? "bg-muted" : "hover:bg-muted/50"}`}
+              title={sidebarHidden ? item.label : undefined}
             >
-              <div className="flex items-center gap-2.5">
+              <div className={`flex items-center gap-2.5 ${sidebarHidden ? "lg:justify-center" : ""}`}>
                 <span
                   className={`transition-colors ${
                     activePage === item.id
@@ -108,16 +124,16 @@ function DashboardContent() {
                     : <Table2 className="size-4" />}
                 </span>
                 <span
-                  className={`text-sm transition-colors ${
-                    activePage === item.id
+                  className={`text-sm transition-colors ${sidebarHidden ? "lg:hidden" : ""}
+                    ${activePage === item.id
                       ? "font-medium text-foreground"
                       : "text-muted-foreground group-hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   {item.label}
                 </span>
               </div>
-              <p className="text-[10px] font-mono text-muted-foreground mt-1 ml-[26px] truncate">
+              <p className={`text-[10px] font-mono text-muted-foreground mt-1 ml-[26px] truncate ${sidebarHidden ? "lg:hidden" : ""}`}>
                 {item.source}
               </p>
             </button>
@@ -125,7 +141,16 @@ function DashboardContent() {
         </nav>
 
         <div className="p-4 border-t border-border">
-          <p className="text-[10px] text-muted-foreground">MV refreshed daily · 07:00 WIB</p>
+          <p className={`text-[10px] text-muted-foreground ${sidebarHidden ? "lg:hidden" : ""}`}>MV refreshed daily · 07:00 WIB</p>
+          <button
+            type="button"
+            onClick={() => setSidebarHidden(!sidebarHidden)}
+            className={`hidden lg:flex items-center justify-center w-full mt-2 p-1.5 rounded-md
+              text-muted-foreground hover:text-foreground hover:bg-muted transition-colors`}
+            title={sidebarHidden ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronsLeft className={`size-4 transition-transform duration-200 ${sidebarHidden ? "rotate-180" : ""}`} />
+          </button>
         </div>
       </aside>
 
@@ -136,8 +161,8 @@ function DashboardContent() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setMobileNav(true)}
-                className="lg:hidden p-1.5 rounded-md hover:bg-muted transition-colors"
+                onClick={() => sidebarHidden ? setSidebarHidden(false) : setMobileNav(true)}
+                className={`${sidebarHidden ? "" : "lg:hidden"} p-1.5 rounded-md hover:bg-muted transition-colors`}
               >
                 <Menu className="size-5" />
               </button>

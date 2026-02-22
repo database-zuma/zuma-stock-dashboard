@@ -10,6 +10,22 @@ function parseMulti(sp: URLSearchParams, key: string): string[] {
   return val.split(",").map((v) => v.trim()).filter(Boolean);
 }
 
+const SORT_WHITELIST: Record<string, string> = {
+  article: "article",
+  kode_besar: "kode_besar",
+  kode: "kode",
+  series: "series",
+  gender_group: "gender_group",
+  tipe: "tipe",
+  group_warna: "group_warna",
+  ukuran: "ukuran",
+  tier: "tier",
+  branch: "branch",
+  nama_gudang: "nama_gudang",
+  pairs: "pairs",
+  est_rsp_value: "est_rsp_value",
+};
+
 function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } {
   const conds: string[] = [];
   const vals: unknown[] = [];
@@ -38,18 +54,25 @@ function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } 
 
   const q = sp.get("q");
   if (q) {
-    const like = `%${q}%`;
-    conds.push(`(kode_besar ILIKE $${i} OR kode ILIKE $${i} OR article ILIKE $${i})`);
-    vals.push(like);
-    i++;
+    conds.push(`kode_besar ILIKE $${i++}`);
+    vals.push(`%${q}%`);
   }
 
   return { clause: conds.length ? "WHERE " + conds.join(" AND ") : "", values: vals };
 }
 
+function getSort(sp: URLSearchParams): string {
+  const sort = sp.get("sort") || "pairs";
+  const dir = sp.get("dir") === "asc" ? "ASC" : "DESC";
+  const col = SORT_WHITELIST[sort];
+  if (!col) return "pairs DESC NULLS LAST";
+  return `${col} ${dir} NULLS LAST`;
+}
+
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const { clause, values } = buildWhere(sp);
+  const orderBy = getSort(sp);
   const page   = Math.max(1, Number(sp.get("page"))  || 1);
   const limit  = Math.min(100, Math.max(1, Number(sp.get("limit")) || 20));
   const offset = (page - 1) * limit;
@@ -65,7 +88,7 @@ export async function GET(req: NextRequest) {
     ${clause}
     GROUP BY kode_besar, kode, article, series, gender_group, tipe, tier,
              branch, nama_gudang, group_warna, ukuran
-    ORDER BY pairs DESC
+    ORDER BY ${orderBy}
     LIMIT $${n} OFFSET $${n + 1}
   `;
 

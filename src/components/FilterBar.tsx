@@ -18,8 +18,6 @@ interface Options {
   sizes: string[];
 }
 
-interface AutocompleteItem { kode: string; article: string; }
-
 const FILTER_KEYS = ["category","branch","gudang","gender","series","color","tier","size","q"] as const;
 
 function MultiSelect({
@@ -134,11 +132,6 @@ export default function FilterBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("q") || "");
-  const [autocomplete, setAc] = useState<AutocompleteItem[]>([]);
-  const [showAc, setShowAc] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const acDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
 
   const { data: opts } = useSWR<Options>("/api/filter-options", fetcher, {
     revalidateOnFocus: false,
@@ -149,64 +142,31 @@ export default function FilterBar() {
     setSearch(searchParams.get("q") || "");
   }, [searchParams]);
 
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowAc(false);
-      }
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, []);
-
-  const handleSearch = useCallback(
+  const applySearch = useCallback(
     (val: string) => {
-      setSearch(val);
-
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (val.trim()) params.set("q", val.trim());
-        else params.delete("q");
-        params.delete("page");
-        router.push(`/?${params.toString()}`);
-      }, 400);
-
-      if (acDebounceRef.current) clearTimeout(acDebounceRef.current);
-      if (val.trim().length >= 1) {
-        acDebounceRef.current = setTimeout(() => {
-          fetch(`/api/autocomplete?q=${encodeURIComponent(val.trim())}`)
-            .then((r) => r.json())
-            .then((data: AutocompleteItem[]) => {
-              setAc(data);
-              setShowAc(data.length > 0);
-            })
-            .catch(() => {});
-        }, 250);
-      } else {
-        setAc([]);
-        setShowAc(false);
-      }
-    },
-    [router, searchParams]
-  );
-
-  const selectAcItem = useCallback(
-    (item: AutocompleteItem) => {
-      setSearch(item.kode);
-      setShowAc(false);
       const params = new URLSearchParams(searchParams.toString());
-      params.set("q", item.kode);
+      if (val.trim()) params.set("q", val.trim());
+      else params.delete("q");
       params.delete("page");
       router.push(`/?${params.toString()}`);
     },
     [router, searchParams]
   );
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") applySearch(search);
+    },
+    [search, applySearch]
+  );
+
+  const clearSearch = useCallback(() => {
+    setSearch("");
+    applySearch("");
+  }, [applySearch]);
+
   const resetAll = useCallback(() => {
     setSearch("");
-    setShowAc(false);
-    setAc([]);
     router.push("/");
   }, [router]);
 
@@ -257,40 +217,24 @@ export default function FilterBar() {
         )}
       </div>
 
-      <div ref={searchRef} className="relative w-full">
+      <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5 pointer-events-none z-10" />
         <Input
           type="text"
-          placeholder="Search kode kecil, kode besar, or product name..."
+          placeholder="Search kode besar... (Enter to search)"
           value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-          onFocus={() => { if (autocomplete.length > 0) setShowAc(true); }}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={handleKeyDown}
           className="pl-9 h-8 text-xs bg-card w-full"
         />
         {search && (
           <button
             type="button"
-            onClick={() => { handleSearch(""); setShowAc(false); }}
+            onClick={clearSearch}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
           >
             <X className="size-3" />
           </button>
-        )}
-
-        {showAc && autocomplete.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-56 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
-            {autocomplete.map((item) => (
-              <button
-                key={item.kode}
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); selectAcItem(item); }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left"
-              >
-                <span className="font-mono font-medium text-foreground flex-shrink-0">{item.kode}</span>
-                <span className="text-muted-foreground truncate">— {item.article}</span>
-              </button>
-            ))}
-          </div>
         )}
       </div>
     </div>

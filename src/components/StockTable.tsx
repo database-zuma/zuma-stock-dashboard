@@ -44,16 +44,35 @@ export default function StockTable() {
   const searchParams = useSearchParams();
   const filterKey = searchParams.toString();
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState("pairs");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const limit = 20;
 
   useEffect(() => { setPage(1); }, [filterKey]);
+
+  const handleSort = (key: string) => {
+    if (sortBy === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      setSortDir("asc");
+    }
+    setPage(1);
+  };
+
+  const sortIcon = (key: string) => {
+    if (sortBy !== key) return <span className="ml-0.5 text-[10px] text-muted-foreground/30">↕</span>;
+    return <span className="ml-0.5 text-[10px] text-[#00E273]">{sortDir === "asc" ? "↑" : "↓"}</span>;
+  };
 
   const swrKey = useMemo(() => {
     const params = new URLSearchParams(filterKey);
     params.set("page", String(page));
     params.set("limit", String(limit));
+    params.set("sort", sortBy);
+    params.set("dir", sortDir);
     return `/api/stock-table?${params}`;
-  }, [filterKey, page, limit]);
+  }, [filterKey, page, limit, sortBy, sortDir]);
 
   const { data, isLoading } = useSWR<TableData>(swrKey, fetcher, {
     revalidateOnFocus: false,
@@ -62,6 +81,9 @@ export default function StockTable() {
   });
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
+
+  const thClass = "text-xs uppercase tracking-wider text-muted-foreground px-4 cursor-pointer select-none hover:text-foreground transition-colors";
+  const thRight = `${thClass} text-right`;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -76,27 +98,53 @@ export default function StockTable() {
         <Table>
           <TableHeader>
             <TableRow className="border-b border-border hover:bg-transparent">
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 min-w-[160px]">Article</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Kode Besar</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Kode</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Series</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Gender</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Type</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Color</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Size</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Tier</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4">Branch</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 min-w-[160px]">Gudang</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">Pairs</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-muted-foreground px-4 text-right">Est. RSP</TableHead>
+              <TableHead className={`${thClass} min-w-[160px]`} onClick={() => handleSort("article")}>
+                <span className="inline-flex items-center">Article {sortIcon("article")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("kode_besar")}>
+                <span className="inline-flex items-center">Kode Besar {sortIcon("kode_besar")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("kode")}>
+                <span className="inline-flex items-center">Kode {sortIcon("kode")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("series")}>
+                <span className="inline-flex items-center">Series {sortIcon("series")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("gender_group")}>
+                <span className="inline-flex items-center">Gender {sortIcon("gender_group")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("tipe")}>
+                <span className="inline-flex items-center">Type {sortIcon("tipe")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("group_warna")}>
+                <span className="inline-flex items-center">Color {sortIcon("group_warna")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("ukuran")}>
+                <span className="inline-flex items-center">Size {sortIcon("ukuran")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("tier")}>
+                <span className="inline-flex items-center">Tier {sortIcon("tier")}</span>
+              </TableHead>
+              <TableHead className={thClass} onClick={() => handleSort("branch")}>
+                <span className="inline-flex items-center">Branch {sortIcon("branch")}</span>
+              </TableHead>
+              <TableHead className={`${thClass} min-w-[160px]`} onClick={() => handleSort("nama_gudang")}>
+                <span className="inline-flex items-center">Gudang {sortIcon("nama_gudang")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("pairs")}>
+                <span className="inline-flex items-center justify-end">Pairs {sortIcon("pairs")}</span>
+              </TableHead>
+              <TableHead className={thRight} onClick={() => handleSort("est_rsp_value")}>
+                <span className="inline-flex items-center justify-end">Est. RSP {sortIcon("est_rsp_value")}</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && !data ? (
               Array.from({ length: 10 }).map((_, i) => (
-                <TableRow key={`skel-${i}`} className="border-b border-border/50">
+                <TableRow key={`skel-${String(i)}`} className="border-b border-border/50">
                   {Array.from({ length: 13 }).map((_, j) => (
-                    <TableCell key={`skel-c-${j}`} className="px-4 py-2.5">
+                    <TableCell key={`skel-c-${String(j)}`} className="px-4 py-2.5">
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
                   ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import useSWR from "swr";
 import { Search, X, ChevronDown, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -70,7 +70,7 @@ function MultiSelect({
         <ChevronDown className={`size-3.5 flex-shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && (
+      {open && options.length > 0 && (
         <div className="absolute top-full left-0 mt-1 z-50 min-w-[160px] w-max max-w-[240px] max-h-64 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
           {selected.length > 0 && (
             <button
@@ -110,12 +110,16 @@ export default function ControlStockFilterBar({
   filters: CSFilters;
   onChange: (f: CSFilters) => void;
 }) {
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [searchInput, setSearchInput] = useState(filters.q);
 
   const { data: opts } = useSWR<CSOptions>("/api/control-stock-filters", fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 300000,
   });
+
+  useEffect(() => {
+    setSearchInput(filters.q);
+  }, [filters.q]);
 
   const toggle = (key: keyof Omit<CSFilters, "q">, val: string) => {
     const current = filters[key];
@@ -124,18 +128,21 @@ export default function ControlStockFilterBar({
   };
   const clear = (key: keyof Omit<CSFilters, "q">) => onChange({ ...filters, [key]: [] });
 
-  const handleSearch = useCallback(
-    (val: string) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        onChange({ ...filters, q: val.trim() });
-      }, 300);
-    },
-    [filters, onChange]
-  );
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      onChange({ ...filters, q: searchInput.trim() });
+    }
+  };
 
-  const resetAll = () =>
+  const clearSearch = () => {
+    setSearchInput("");
+    onChange({ ...filters, q: "" });
+  };
+
+  const resetAll = () => {
+    setSearchInput("");
     onChange({ gender: [], series: [], color: [], tipe: [], tier: [], size: [], q: "" });
+  };
 
   const hasFilters =
     Object.values(filters).some((v) => (Array.isArray(v) ? v.length > 0 : v !== ""));
@@ -185,11 +192,21 @@ export default function ControlStockFilterBar({
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-3.5 pointer-events-none" />
         <Input
           type="text"
-          placeholder="Search kode besar, kode kecil, article..."
-          defaultValue={filters.q}
-          onChange={(e) => handleSearch(e.target.value)}
+          placeholder="Search kode besar... (Enter to search)"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={handleKeyDown}
           className="pl-9 h-8 text-xs bg-card w-full"
         />
+        {searchInput && (
+          <button
+            type="button"
+            onClick={clearSearch}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
+          >
+            <X className="size-3" />
+          </button>
+        )}
       </div>
     </div>
   );

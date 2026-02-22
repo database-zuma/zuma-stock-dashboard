@@ -10,6 +10,28 @@ function parseMulti(sp: URLSearchParams, key: string): string[] {
   return val.split(",").map((v) => v.trim()).filter(Boolean);
 }
 
+const SORT_WHITELIST: Record<string, string> = {
+  kode_besar: "kode_besar",
+  kode_kecil: "kode_kecil",
+  gender: "gender",
+  series: "series",
+  color: "color",
+  tipe: "tipe",
+  tier: "tier",
+  size: "size",
+  stok_global: "stok_global",
+  wh_pusat: "wh_pusat",
+  wh_bali: "wh_bali",
+  wh_jkt: "wh_jkt",
+  stok_toko: "stok_toko",
+  stok_online: "stok_online",
+  avg_last_3_months: "avg_last_3_months",
+  to_wh: "to_wh",
+  to_total: "to_total",
+  current_year_qty: "current_year_qty",
+  last_year_qty: "last_year_qty",
+};
+
 function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } {
   const conds: string[] = [];
   const vals: unknown[] = [];
@@ -36,18 +58,25 @@ function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } 
 
   const q = sp.get("q");
   if (q) {
-    const like = `%${q}%`;
-    conds.push(`(kode_besar ILIKE $${i} OR kode_kecil ILIKE $${i} OR kodemix ILIKE $${i})`);
-    vals.push(like);
-    i++;
+    conds.push(`kode_besar ILIKE $${i++}`);
+    vals.push(`%${q}%`);
   }
 
   return { clause: conds.length ? "WHERE " + conds.join(" AND ") : "", values: vals };
 }
 
+function getSort(sp: URLSearchParams): string {
+  const sort = sp.get("sort") || "stok_global";
+  const dir = sp.get("dir") === "asc" ? "ASC" : "DESC";
+  const col = SORT_WHITELIST[sort];
+  if (!col) return "stok_global DESC NULLS LAST";
+  return `${col} ${dir} NULLS LAST`;
+}
+
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const { clause, values } = buildWhere(sp);
+  const orderBy = getSort(sp);
   const page   = Math.max(1, Number(sp.get("page"))  || 1);
   const limit  = Math.min(100, Math.max(1, Number(sp.get("limit")) || 20));
   const offset = (page - 1) * limit;
@@ -62,7 +91,7 @@ export async function GET(req: NextRequest) {
       updated_at
     FROM mart.sku_portfolio_size
     ${clause}
-    ORDER BY stok_global DESC NULLS LAST
+    ORDER BY ${orderBy}
     LIMIT $${n} OFFSET $${n + 1}
   `;
 
@@ -97,7 +126,6 @@ export async function GET(req: NextRequest) {
         to_total:          r.to_total != null ? Number(r.to_total) : null,
         current_year_qty:  Number(r.current_year_qty)  || 0,
         last_year_qty:     Number(r.last_year_qty)     || 0,
-        updated_at:        r.updated_at,
       })),
       total: Number(countRes.rows[0].total),
       page,

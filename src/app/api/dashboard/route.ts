@@ -36,6 +36,12 @@ function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } 
   addFilter("tier",        parseMulti(sp, "tier"));
   addFilter("ukuran",      parseMulti(sp, "size"));
 
+  const q = sp.get("q");
+  if (q) {
+    conds.push(`kode_besar ILIKE $${i++}`);
+    vals.push(`%${q}%`);
+  }
+
   return {
     clause: conds.length ? "WHERE " + conds.join(" AND ") : "",
     values: vals,
