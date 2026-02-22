@@ -78,9 +78,10 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const { clause, values } = buildWhere(sp);
   const orderBy = getSort(sp);
+  const isExport = sp.get("export") === "all";
   const page   = Math.max(1, Number(sp.get("page"))  || 1);
-  const limit  = Math.min(100, Math.max(1, Number(sp.get("limit")) || 20));
-  const offset = (page - 1) * limit;
+  const limit  = isExport ? 50000 : Math.min(100, Math.max(1, Number(sp.get("limit")) || 20));
+  const offset = isExport ? 0 : (page - 1) * limit;
   const n      = values.length + 1;
 
   const dataSql = `
@@ -93,7 +94,7 @@ export async function GET(req: NextRequest) {
     FROM mart.sku_portfolio_size
     ${clause}
     ORDER BY ${orderBy}
-    LIMIT $${n} OFFSET $${n + 1}
+    ${isExport ? '' : `LIMIT $${n} OFFSET $${n + 1}`}
   `;
 
   const countSql = `
@@ -102,7 +103,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const [dataRes, countRes] = await Promise.all([
-      pool.query(dataSql, [...(values as string[]), limit, offset]),
+      pool.query(dataSql, isExport ? (values as string[]) : [...(values as string[]), limit, offset]),
       pool.query(countSql, values as string[]),
     ]);
     return NextResponse.json({

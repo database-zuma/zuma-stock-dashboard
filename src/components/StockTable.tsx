@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { fmtPairs, fmtRupiah } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
 import TierBadge from "./TierBadge";
+import { toCSV, downloadCSV, downloadXLSX } from "@/lib/export";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -39,6 +41,9 @@ interface TableData {
   page: number;
   limit: number;
 }
+
+const STOCK_HEADERS = ["Article", "Kode Besar", "Kode", "Series", "Gender", "Type", "Color", "Size", "Tier", "Branch", "Gudang", "Pairs", "Est RSP"];
+const STOCK_KEYS = ["article", "kode_besar", "kode", "series", "gender_group", "tipe", "group_warna", "ukuran", "tier", "branch", "nama_gudang", "pairs", "est_rsp_value"];
 
 export default function StockTable() {
   const searchParams = useSearchParams();
@@ -82,16 +87,48 @@ export default function StockTable() {
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
 
+
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = useCallback(async (format: "csv" | "xlsx") => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams(filterKey);
+      params.set("export", "all");
+      params.set("sort", sortBy);
+      params.set("dir", sortDir);
+      const res = await fetch(`/api/stock-table?${params}`);
+      const json = await res.json();
+      const rows = json.rows as Record<string, unknown>[];
+      if (format === "csv") {
+        downloadCSV(toCSV(STOCK_HEADERS, rows, STOCK_KEYS), "stock-detail.csv");
+      } else {
+        await downloadXLSX(STOCK_HEADERS, rows, STOCK_KEYS, "stock-detail.xlsx");
+      }
+    } finally {
+      setExporting(false);
+    }
+  }, [filterKey, sortBy, sortDir]);
   const thClass = "text-xs uppercase tracking-wider text-muted-foreground px-4 cursor-pointer select-none hover:text-foreground transition-colors";
   const thRight = `${thClass} text-right`;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-border">
-        <h3 className="font-semibold text-foreground">Inventory Detail</h3>
-        <p className="text-xs text-muted-foreground">
-          {data ? `${fmtPairs(data.total)} total rows` : "Loading..."}
-        </p>
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-foreground">Inventory Detail</h3>
+          <p className="text-xs text-muted-foreground">
+            {data ? `${fmtPairs(data.total)} total rows` : "Loading..."}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={exporting || !data} onClick={() => handleExport("csv")}>
+            <Download className="size-3.5 mr-1.5" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" disabled={exporting || !data} onClick={() => handleExport("xlsx")}>
+            <Download className="size-3.5 mr-1.5" /> XLSX
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">

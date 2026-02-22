@@ -121,6 +121,17 @@ export async function GET(req: NextRequest) {
           ELSE 999
         END ASC,
         ukuran ASC
+    ),
+    by_series AS (
+      SELECT series, SUM(pairs) AS pairs
+      FROM base WHERE series IS NOT NULL
+      GROUP BY series ORDER BY pairs DESC
+    ),
+    top_articles AS (
+      SELECT kode_besar, article, SUM(pairs) AS pairs
+      FROM base
+      GROUP BY kode_besar, article
+      ORDER BY pairs DESC LIMIT 15
     )
     SELECT
       (SELECT row_to_json(k)         FROM kpis k)       AS kpis,
@@ -134,7 +145,11 @@ export async function GET(req: NextRequest) {
           WHEN s.ukuran ~ '^[0-9]+/[0-9]+$' THEN split_part(s.ukuran,'/',1)::int
           ELSE 999
         END ASC, s.ukuran ASC)
-       FROM by_size s)                                   AS by_size
+       FROM by_size s)                                   AS by_size,
+      (SELECT json_agg(sr ORDER BY sr.pairs DESC)
+       FROM by_series sr)                                 AS by_series,
+      (SELECT json_agg(ta ORDER BY ta.pairs DESC)
+       FROM top_articles ta)                              AS top_articles
   `;
 
   try {
@@ -163,6 +178,12 @@ export async function GET(req: NextRequest) {
       })),
       by_size: (r.by_size || []).map((s: Record<string, unknown>) => ({
         ukuran: s.ukuran, pairs: Number(s.pairs),
+      })),
+      by_series: (r.by_series || []).map((s: Record<string, unknown>) => ({
+        series: s.series, pairs: Number(s.pairs),
+      })),
+      top_articles: (r.top_articles || []).map((a: Record<string, unknown>) => ({
+        kode_besar: a.kode_besar, article: a.article, pairs: Number(a.pairs),
       })),
     };
     return NextResponse.json(body, {

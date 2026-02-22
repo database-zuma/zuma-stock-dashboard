@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import useSWR from "swr";
 import type { CSFilters } from "./ControlStockFilterBar";
 import { fetcher } from "@/lib/fetcher";
 import TierBadge from "./TierBadge";
+import { toCSV, downloadCSV, downloadXLSX } from "@/lib/export";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -45,6 +47,10 @@ interface TableData {
   page: number;
   limit: number;
 }
+
+
+const CS_HEADERS = ["Kode Besar", "Kode Kecil", "Gender", "Series", "Color", "Tipe", "Tier", "Size", "Stok Global", "WH Pusat", "WH Bali", "WH JKT", "Toko", "Online", "Avg 3M", "TO WH", "TO Total", "YTD Sales", "LY Sales"];
+const CS_KEYS = ["kode_besar", "kode_kecil", "gender", "series", "color", "tipe", "tier", "size", "stok_global", "wh_pusat", "wh_bali", "wh_jkt", "stok_toko", "stok_online", "avg_last_3_months", "to_wh", "to_total", "current_year_qty", "last_year_qty"];
 
 function fmt(n: number) { return n.toLocaleString("id-ID"); }
 function fmtTo(n: number | null) {
@@ -103,16 +109,56 @@ export default function ControlStockTable({ filters }: { filters: CSFilters }) {
 
   const totalPages = data ? Math.ceil(data.total / limit) : 0;
 
+
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = useCallback(async (format: "csv" | "xlsx") => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (filters.gender.length) params.set("gender", filters.gender.join(","));
+      if (filters.series.length) params.set("series", filters.series.join(","));
+      if (filters.color.length)  params.set("color", filters.color.join(","));
+      if (filters.tipe.length)   params.set("tipe", filters.tipe.join(","));
+      if (filters.tier.length)   params.set("tier", filters.tier.join(","));
+      if (filters.size.length)   params.set("size", filters.size.join(","));
+      if (filters.q)             params.set("q", filters.q);
+      params.set("export", "all");
+      params.set("sort", sortBy);
+      params.set("dir", sortDir);
+      const res = await fetch(`/api/control-stock?${params}`);
+      const json = await res.json();
+      const rows = json.rows as Record<string, unknown>[];
+      if (format === "csv") {
+        downloadCSV(toCSV(CS_HEADERS, rows, CS_KEYS), "control-stock.csv");
+      } else {
+        await downloadXLSX(CS_HEADERS, rows, CS_KEYS, "control-stock.xlsx");
+      }
+    } finally {
+      setExporting(false);
+    }
+  }, [filters, sortBy, sortDir]);
+
   const thClass = "text-xs uppercase tracking-wider text-muted-foreground px-4 cursor-pointer select-none hover:text-foreground transition-colors";
   const thRight = `${thClass} text-right`;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-border">
-        <h3 className="font-semibold text-foreground">Control Stock</h3>
-        <p className="text-xs text-muted-foreground">
-          {data ? `${fmt(data.total)} total rows — sumber: mart.sku_portfolio_size` : "Loading..."}
-        </p>
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-foreground">Control Stock</h3>
+          <p className="text-xs text-muted-foreground">
+            {data ? `${fmt(data.total)} total rows — sumber: mart.sku_portfolio_size` : "Loading..."}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={exporting || !data} onClick={() => handleExport("csv")}>
+            <Download className="size-3.5 mr-1.5" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" disabled={exporting || !data} onClick={() => handleExport("xlsx")}>
+            <Download className="size-3.5 mr-1.5" /> XLSX
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
