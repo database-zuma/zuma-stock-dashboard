@@ -10,6 +10,7 @@ import {
   Legend,
   Title,
 } from "chart.js";
+import { TreemapController, TreemapElement } from "chartjs-chart-treemap";
 
 ChartJS.register(
   CategoryScale,
@@ -18,7 +19,9 @@ ChartJS.register(
   ArcElement,
   Tooltip,
   Legend,
-  Title
+  Title,
+  TreemapController,
+  TreemapElement
 );
 
 ChartJS.defaults.color = "#86868b";

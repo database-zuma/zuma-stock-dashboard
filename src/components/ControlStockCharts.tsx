@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import useSWR from "swr";
 import "./ChartSetup";
-import { Bar, Doughnut } from "react-chartjs-2";
+import { Bar, Chart, Doughnut } from "react-chartjs-2";
 import type { CSFilters } from "./ControlStockFilterBar";
 import { fetcher } from "@/lib/fetcher";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -107,7 +107,7 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
     (t) => by_tier.find((d) => d.tier === t) || { tier: t, qty: 0, articles: 0 }
   );
 
-  const seriesHeight = Math.max(280, by_series.length * 32);
+
 
   return (
     <div className="space-y-6">
@@ -221,20 +221,41 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
           <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
             Stock by Series
           </h3>
-          <div style={{ position: "relative", height: seriesHeight }}>
-            <Bar
+          <div style={{ position: "relative", height: 340 }}>
+            <Chart
+              type="treemap"
               data={{
-                labels: by_series.map((s) => s.series),
                 datasets: [{
-                  data: by_series.map((s) => s.qty),
-                  backgroundColor: "#00E273",
-                  borderRadius: 3,
-                  borderSkipped: false,
-                  maxBarThickness: 24,
-                }],
+                  tree: by_series.map((s) => ({ series: s.series, qty: s.qty })),
+                  key: "qty",
+                  groups: ["series"],
+                  backgroundColor(ctx: any) {
+                    if (ctx.type !== "data") return "transparent";
+                    const total = by_series.reduce((s, r) => s + r.qty, 0);
+                    const val = ctx.raw?.v ?? 0;
+                    const ratio = total > 0 ? val / total : 0;
+                    const minOpacity = 0.25;
+                    const opacity = minOpacity + ratio * (1 - minOpacity) * 4;
+                    return `rgba(0, 226, 115, ${Math.min(opacity, 1).toFixed(2)})`;
+                  },
+                  borderColor: "#ffffff",
+                  borderWidth: 2,
+                  spacing: 1,
+                  labels: {
+                    display: true,
+                    align: "center" as const,
+                    position: "middle" as const,
+                    font: { size: 11, weight: "bold" as const },
+                    color: "#1A1A18",
+                    formatter: (ctx: any) => {
+                      const g = ctx.raw?.g ?? "";
+                      const v = ctx.raw?.v ?? 0;
+                      return v > 0 ? `${g}\n${fmt(v)}` : g;
+                    },
+                  },
+                } as any],
               }}
               options={{
-                indexAxis: "y",
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
@@ -247,16 +268,15 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
                     bodyColor: "#1A1A18",
                     padding: 10,
                     callbacks: {
-                      label: (ctx) => `${fmt(Number(ctx.raw))} pcs`,
+                      title: (items: any[]) => items[0]?.raw?.g ?? "",
+                      label: (ctx: any) => {
+                        const v = ctx.raw?.v ?? 0;
+                        const total = by_series.reduce((s, r) => s + r.qty, 0);
+                        const pct = total > 0 ? ((v / total) * 100).toFixed(1) : "0";
+                        return `${fmt(v)} pcs (${pct}%)`;
+                      },
                     },
                   },
-                },
-                scales: {
-                  x: {
-                    grid: { color: "rgba(0,0,0,0.04)" },
-                    ticks: { callback: (v) => { const n = Number(v); return n >= 1000 ? `${(n / 1000).toFixed(0)}K` : String(n); } },
-                  },
-                  y: { grid: { display: false }, ticks: { font: { size: 11 } } },
                 },
               }}
             />
