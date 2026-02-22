@@ -14,8 +14,8 @@ import StockTable from "@/components/StockTable";
 import ControlStockFilterBar, { type CSFilters } from "@/components/ControlStockFilterBar";
 import ControlStockTable from "@/components/ControlStockTable";
 import ControlStockCharts from "@/components/ControlStockCharts";
+import ControlStockKodemixTable from "@/components/ControlStockKodemixTable";
 import "@/components/ChartSetup";
-import { Bar } from "react-chartjs-2";
 import { fmtPairs, fmtRupiah } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
 import { LayoutDashboard, Table2, Menu, ChevronsLeft } from "lucide-react";
@@ -31,12 +31,10 @@ interface BranchRow { branch: string; gender_group: string; pairs: number }
 interface TipeRow { tipe: string; pairs: number }
 interface TierRow { tier: string; pairs: number; articles: number }
 interface SizeRow { ukuran: string; pairs: number }
-interface SeriesRow { series: string; pairs: number }
-interface ArticleRow { kode_besar: string; article: string; pairs: number }
 
 type Page = "dashboard" | "control";
-type Tab = "overview" | "sku" | "stock";
-type ControlTab = "charts" | "table";
+type Tab = "overview" | "stock";
+type ControlTab = "charts" | "table" | "table-kodemix";
 
 const DEFAULT_CS: CSFilters = {
   gender: [], series: [], color: [], tipe: [], tier: [], size: [], q: "",
@@ -70,8 +68,6 @@ function DashboardContent() {
   const tipeData      = (dash?.by_tipe       as TipeRow[]   | undefined) ?? null;
   const tierData      = (dash?.by_tier       as TierRow[]   | undefined) ?? null;
   const sizeData      = (dash?.by_size       as SizeRow[]   | undefined) ?? null;
-  const seriesData    = (dash?.by_series    as SeriesRow[]  | undefined) ?? null;
-  const topArticles   = (dash?.top_articles as ArticleRow[] | undefined) ?? null;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
@@ -208,7 +204,6 @@ function DashboardContent() {
             <div className="max-w-[1440px] mx-auto px-4 sm:px-6 flex gap-0">
               {([
                 ["overview", "Overview"],
-                ["sku",      "SKU Chart"],
                 ["stock",    "Stock Detail"],
               ] as [Tab, string][]).map(([t, label]) => (
                 <button
@@ -229,8 +224,9 @@ function DashboardContent() {
           {activePage === "control" && (
             <div className="max-w-[1440px] mx-auto px-4 sm:px-6 flex gap-0">
               {([
-                ["charts", "Charts"],
-                ["table",  "Table"],
+                ["charts",        "Charts"],
+                ["table",         "Table Kode Besar"],
+                ["table-kodemix", "Table Kodemix"],
               ] as [ControlTab, string][]).map(([t, label]) => (
                 <button
                   type="button"
@@ -352,78 +348,12 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* ── Stock Detail ──────────────────────────────────── */}
-          {/* ── SKU Chart ───────────────────────────────────── */}
-          {activePage === "dashboard" && activeTab === "sku" && (
-            <div className="space-y-6">
-              {/* Stock by Series — horizontal bar */}
-              <section className="rounded-xl border border-border bg-card p-4">
-                <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
-                  Stock by Series
-                </h3>
-                {seriesData ? (
-                  <Bar
-                    data={{
-                      labels: seriesData.map((r) => r.series || "(blank)"),
-                      datasets: [{
-                        label: "Pairs",
-                        data: seriesData.map((r) => r.pairs),
-                        backgroundColor: "#00E273",
-                        borderRadius: 2,
-                      }],
-                    }}
-                    options={{
-                      indexAxis: "y" as const,
-                      plugins: { legend: { display: false } },
-                      scales: {
-                        x: { ticks: { callback: (v) => Number(v).toLocaleString() } },
-                      },
-                      maintainAspectRatio: false,
-                    }}
-                    height={Math.max(seriesData.length * 28, 200)}
-                  />
-                ) : (
-                  <div className="h-[300px] w-full rounded-lg bg-muted animate-pulse" />
-                )}
-              </section>
-
-              {/* Top 15 Articles by Stock — horizontal bar */}
-              <section className="rounded-xl border border-border bg-card p-4">
-                <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
-                  Top 15 Articles by Stock
-                </h3>
-                {topArticles ? (
-                  <Bar
-                    data={{
-                      labels: topArticles.map((r) => `${r.kode_besar} — ${r.article}`),
-                      datasets: [{
-                        label: "Pairs",
-                        data: topArticles.map((r) => r.pairs),
-                        backgroundColor: "#00E273",
-                        borderRadius: 2,
-                      }],
-                    }}
-                    options={{
-                      indexAxis: "y" as const,
-                      plugins: { legend: { display: false } },
-                      scales: {
-                        x: { ticks: { callback: (v) => Number(v).toLocaleString() } },
-                      },
-                      maintainAspectRatio: false,
-                    }}
-                    height={Math.max(topArticles.length * 32, 200)}
-                  />
-                ) : (
-                  <div className="h-[500px] w-full rounded-lg bg-muted animate-pulse" />
-                )}
-              </section>
-            </div>
-          )}
 
           {/* ── Stock Detail ──────────────────────────────────── */}
           {activePage === "dashboard" && activeTab === "stock" && <StockTable />}
           {activePage === "control" && controlTab === "charts" && <ControlStockCharts filters={csFilters} />}
           {activePage === "control" && controlTab === "table" && <ControlStockTable filters={csFilters} />}
+          {activePage === "control" && controlTab === "table-kodemix" && <ControlStockKodemixTable filters={csFilters} />}
         </main>
       </div>
     </div>
