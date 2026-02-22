@@ -10,20 +10,17 @@ function parseMulti(sp: URLSearchParams, key: string): string[] {
   return val.split(",").map((v) => v.trim()).filter(Boolean);
 }
 
-/* ── Dimension definitions for cross-filtering ── */
+const SIZE_ORDER = "CASE WHEN val ~ '^[0-9]+$' THEN val::int WHEN val ~ '^[0-9]+/[0-9]+$' THEN split_part(val,'/',1)::int ELSE 999 END, val";
+
 const DIMS = [
-  { key: "genders", col: "gender", param: "gender", nullFilter: "gender IS NOT NULL AND gender != ''", orderBy: "gender" },
-  { key: "series",  col: "series", param: "series", nullFilter: "series IS NOT NULL AND series != ''", orderBy: "series" },
-  { key: "colors",  col: "color",  param: "color",  nullFilter: "color IS NOT NULL AND color != ''",   orderBy: "color" },
-  { key: "tipes",   col: "tipe",   param: "tipe",   nullFilter: "tipe IS NOT NULL AND tipe != ''",     orderBy: "tipe" },
-  { key: "tiers",   col: "tier",   param: "tier",    nullFilter: "tier IS NOT NULL AND tier != ''",     orderBy: "tier" },
-  { key: "sizes",   col: "size",   param: "size",    nullFilter: "size IS NOT NULL AND size != ''",     orderBy: "CASE WHEN size ~ '^[0-9]+$' THEN size::int WHEN size ~ '^[0-9]+/[0-9]+$' THEN split_part(size,'/',1)::int ELSE 999 END, size" },
+  { key: "genders", col: "gender", param: "gender", nullFilter: "gender IS NOT NULL AND gender != ''", orderBy: "val" },
+  { key: "series",  col: "series", param: "series", nullFilter: "series IS NOT NULL AND series != ''", orderBy: "val" },
+  { key: "colors",  col: "color",  param: "color",  nullFilter: "color IS NOT NULL AND color != ''",   orderBy: "val" },
+  { key: "tipes",   col: "tipe",   param: "tipe",   nullFilter: "tipe IS NOT NULL AND tipe != ''",     orderBy: "val" },
+  { key: "tiers",   col: "tier",   param: "tier",    nullFilter: "tier IS NOT NULL AND tier != ''",     orderBy: "val" },
+  { key: "sizes",   col: "size",   param: "size",    nullFilter: "size IS NOT NULL AND size != ''",     orderBy: SIZE_ORDER },
 ] as const;
 
-/**
- * Cross-filtered options for Control Stock page.
- * e.g. Series=BLACKSERIES → Gender only shows MEN.
- */
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const q = sp.get("q");
@@ -55,7 +52,8 @@ export async function GET(req: NextRequest) {
           i++;
         }
 
-        const sql = `SELECT DISTINCT ${dim.col} AS val FROM mart.sku_portfolio_size WHERE ${conds.join(" AND ")} ORDER BY ${dim.orderBy}`;
+        const inner = `SELECT DISTINCT ${dim.col} AS val FROM mart.sku_portfolio_size WHERE ${conds.join(" AND ")}`;
+        const sql = `SELECT val FROM (${inner}) sub ORDER BY ${dim.orderBy}`;
         const res = await pool.query(sql, vals);
         return { key: dim.key, values: res.rows.map((r: Record<string, unknown>) => r.val).filter(Boolean) };
       })
