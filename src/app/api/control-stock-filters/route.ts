@@ -31,6 +31,8 @@ export async function GET(req: NextRequest) {
         const conds: string[] = [dim.nullFilter];
         const vals: unknown[] = [];
         let i = 1;
+        // Exclude non-product items (shopbag, paperbag, GWP, hanger)
+        conds.push("kode_besar !~ '^(gwp|hanger|paperbag|shopbag)'");
 
         for (const other of DIMS) {
           if (other.param === dim.param) continue;

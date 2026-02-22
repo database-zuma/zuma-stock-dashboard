@@ -31,6 +31,9 @@ function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } 
   const vals: unknown[] = [];
   let i = 1;
 
+  // Exclude non-product items (shopbag, paperbag, GWP, hanger)
+  conds.push("kode_besar !~ '^(gwp|hanger|paperbag|shopbag)'");
+
   const addFilter = (col: string, values: string[]) => {
     if (values.length === 0) return;
     if (values.length === 1) {

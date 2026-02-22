@@ -63,7 +63,7 @@ function fmtAvg(n: number) {
 
 export default function ControlStockTable({ filters }: { filters: CSFilters }) {
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState("stok_global");
+  const [sortBy, setSortBy] = useState("avg_last_3_months");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const limit = 10;
   const fKey = JSON.stringify(filters);
