@@ -91,18 +91,24 @@ function DashboardContent() {
       >
         <div className={`px-5 py-5 border-b border-border ${sidebarHidden ? "lg:px-2 lg:py-4 lg:flex lg:justify-center" : ""}`}>
           {sidebarHidden ? (
-            <span className="hidden lg:block text-base font-bold text-[#00E273]">Z</span>
+            <img src="/zuma-logo.png" alt="Zuma" className="hidden lg:block h-7 w-auto" />
           ) : (
-            <>
-              <h1 className="text-base font-semibold tracking-tight">Stock Dashboard</h1>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Zuma Indonesia</p>
-            </>
+            <div className="flex items-center gap-2.5">
+              <img src="/zuma-logo.png" alt="Zuma" className="h-7 w-auto" />
+              <div>
+                <h1 className="text-[13px] font-bold tracking-widest uppercase">Stock Dashboard</h1>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Zuma Indonesia</p>
+              </div>
+            </div>
           )}
           {/* Mobile: always show full header when sidebar is collapsed on desktop */}
           {sidebarHidden && (
-            <div className="lg:hidden">
-              <h1 className="text-base font-semibold tracking-tight">Stock Dashboard</h1>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Zuma Indonesia</p>
+            <div className="lg:hidden flex items-center gap-2.5">
+              <img src="/zuma-logo.png" alt="Zuma" className="h-7 w-auto" />
+              <div>
+                <h1 className="text-[13px] font-bold tracking-widest uppercase">Stock Dashboard</h1>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Zuma Indonesia</p>
+              </div>
             </div>
           )}
         </div>
