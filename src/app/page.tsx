@@ -15,6 +15,7 @@ import ControlStockFilterBar, { type CSFilters } from "@/components/ControlStock
 import ControlStockTable from "@/components/ControlStockTable";
 import ControlStockCharts from "@/components/ControlStockCharts";
 import ControlStockKodemixTable from "@/components/ControlStockKodemixTable";
+import WarehouseTreemap, { WarehouseTreemapSkeleton } from "@/components/WarehouseTreemap";
 import "@/components/ChartSetup";
 import { fmtPairs, fmtRupiah } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
@@ -41,7 +42,7 @@ const DEFAULT_CS: CSFilters = {
 };
 
 const NAV_ITEMS: { id: Page; label: string; source: string }[] = [
-  { id: "dashboard", label: "Dashboard Cache", source: "core.dashboard_cache" },
+  { id: "dashboard", label: "Accurate Stock", source: "core.dashboard_cache" },
   { id: "control",   label: "Control Stock",   source: "mart.sku_portfolio_size" },
 ];
 
@@ -173,7 +174,7 @@ function DashboardContent() {
               </button>
               <div>
                 <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                  {activePage === "dashboard" ? "Dashboard Cache" : "Control Stock"}
+                  {activePage === "dashboard" ? "Accurate Stock" : "Control Stock"}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {activePage === "dashboard" ? (
@@ -308,9 +309,9 @@ function DashboardContent() {
                 </div>
                 <div className="rounded-xl border border-border bg-card p-4">
                   <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
-                    Stock by Warehouse &amp; Gender
+                    Stock by Warehouse
                   </h3>
-                  {warehouseData ? <BranchChart data={warehouseData} /> : <BranchChartSkeleton />}
+                  {warehouseData ? <WarehouseTreemap data={warehouseData} /> : <WarehouseTreemapSkeleton />}
                 </div>
               </section>
 
