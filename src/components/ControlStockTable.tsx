@@ -59,7 +59,7 @@ export default function ControlStockTable({ filters }: { filters: CSFilters }) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("stok_global");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const limit = 20;
+  const limit = 10;
   const fKey = JSON.stringify(filters);
 
   useEffect(() => { setPage(1); }, [fKey]);

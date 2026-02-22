@@ -20,6 +20,7 @@ interface Options {
 
 const FILTER_KEYS = ["category","branch","gudang","gender","series","color","tier","size","q"] as const;
 
+
 function MultiSelect({
   label,
   paramKey,
@@ -34,12 +35,24 @@ function MultiSelect({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const selected = useMemo(() => {
     const val = searchParams.get(paramKey);
     return val ? val.split(",").map((v) => v.trim()).filter(Boolean) : [];
   }, [searchParams, paramKey]);
+
+  const filteredOptions = useMemo(
+    () =>
+      dropdownSearch
+        ? options.filter((o) =>
+            o.toLowerCase().includes(dropdownSearch.toLowerCase())
+          )
+        : options,
+    [options, dropdownSearch]
+  );
 
   const toggleOption = useCallback(
     (opt: string) => {
@@ -62,6 +75,7 @@ function MultiSelect({
     router.push(`/?${params.toString()}`);
   }, [router, searchParams, paramKey]);
 
+
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -70,9 +84,18 @@ function MultiSelect({
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
+
+  useEffect(() => {
+    if (!open) {
+      setDropdownSearch("");
+    } else {
+      setTimeout(() => searchInputRef.current?.focus(), 0);
+    }
+  }, [open]);
+
   const labelText =
     selected.length === 0
-      ? `All ${label}`
+      ? label
       : selected.length === 1
       ? (renderOption ? renderOption(selected[0]) : selected[0])
       : `${selected.length} selected`;
@@ -92,51 +115,74 @@ function MultiSelect({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[160px] w-max max-w-[240px] max-h-64 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
-          {selected.length > 0 && (
-            <button
-              type="button"
-              onClick={clearFilter}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors border-b border-border"
-            >
-              <X className="size-3" />
-              Clear {label}
-            </button>
-          )}
-          {options.map((opt) => {
-            const checked = selected.includes(opt);
-            return (
+        <div className="absolute top-full left-0 mt-1 z-50 min-w-[160px] w-max max-w-[240px] rounded-md border border-border bg-card shadow-lg">
+          {/* in-dropdown search */}
+          <div className="p-1.5 border-b border-border">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search..."
+              value={dropdownSearch}
+              onChange={(e) => setDropdownSearch(e.target.value)}
+              className="w-full text-xs px-2 py-1 rounded border border-border bg-background text-foreground placeholder:text-muted-foreground outline-none focus:border-[#00E273]"
+            />
+          </div>
+
+          <div className="max-h-56 overflow-y-auto">
+            {selected.length > 0 && (
               <button
-                key={opt}
                 type="button"
-                onClick={() => toggleOption(opt)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left"
+                onClick={clearFilter}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors border-b border-border"
               >
-                <span
-                  className={`size-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors
-                    ${checked ? "bg-[#00E273] border-[#00E273]" : "border-border bg-background"}`}
-                >
-                  {checked && <Check className="size-2.5 text-black stroke-[3]" />}
-                </span>
-                <span className="truncate">{renderOption ? renderOption(opt) : opt}</span>
+                <X className="size-3" />
+                Clear {label}
               </button>
-            );
-          })}
+            )}
+            {filteredOptions.length === 0 && (
+              <p className="px-3 py-2 text-xs text-muted-foreground">No results</p>
+            )}
+            {filteredOptions.map((opt) => {
+              const checked = selected.includes(opt);
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => toggleOption(opt)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left"
+                >
+                  <span
+                    className={`size-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors
+                      ${checked ? "bg-[#00E273] border-[#00E273]" : "border-border bg-background"}`}
+                  >
+                    {checked && <Check className="size-2.5 text-black stroke-[3]" />}
+                  </span>
+                  <span className="truncate">
+                    {renderOption ? renderOption(opt) : opt}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
+
 export default function FilterBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("q") || "");
 
-  const { data: opts } = useSWR<Options>("/api/filter-options", fetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 300000,
-  });
+
+  const filterQs = searchParams.toString();
+  const { data: opts } = useSWR<Options>(
+    `/api/filter-options${filterQs ? `?${filterQs}` : ""}`,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 300000, keepPreviousData: true }
+  );
 
   useEffect(() => {
     setSearch(searchParams.get("q") || "");
@@ -153,11 +199,16 @@ export default function FilterBar() {
     [router, searchParams]
   );
 
+  /* FIX: read value from DOM (e.currentTarget.value) to avoid stale closure */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") applySearch(search);
+      if (e.key === "Enter") {
+        const val = e.currentTarget.value;
+        setSearch(val);
+        applySearch(val);
+      }
     },
-    [search, applySearch]
+    [applySearch]
   );
 
   const clearSearch = useCallback(() => {
@@ -176,32 +227,32 @@ export default function FilterBar() {
     <div className="flex flex-col gap-2 w-full">
       <div className="flex gap-1.5 items-center w-full">
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Category" paramKey="category" options={opts?.categories || []} />
+          <MultiSelect label="RETAIL/WAREHOUSE" paramKey="category" options={opts?.categories || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Branch" paramKey="branch" options={opts?.branches || []} />
+          <MultiSelect label="BRANCH" paramKey="branch" options={opts?.branches || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Gudang" paramKey="gudang" options={opts?.gudangs || []} />
+          <MultiSelect label="GUDANG" paramKey="gudang" options={opts?.gudangs || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Gender" paramKey="gender" options={opts?.genders || []} />
+          <MultiSelect label="GENDER" paramKey="gender" options={opts?.genders || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Series" paramKey="series" options={opts?.series || []} />
+          <MultiSelect label="SERIES" paramKey="series" options={opts?.series || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Color" paramKey="color" options={opts?.colors || []} />
+          <MultiSelect label="COLOR" paramKey="color" options={opts?.colors || []} />
         </div>
         <div className="flex-1 min-w-[80px]">
           <MultiSelect
-            label="Tier" paramKey="tier"
+            label="TIER" paramKey="tier"
             options={opts?.tiers || []}
             renderOption={(t) => `T${t}`}
           />
         </div>
         <div className="flex-1 min-w-[80px]">
-          <MultiSelect label="Size" paramKey="size" options={opts?.sizes || []} />
+          <MultiSelect label="SIZE" paramKey="size" options={opts?.sizes || []} />
         </div>
         {hasFilters && (
           <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import useSWR from "swr";
 import { Search, X, ChevronDown, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ export interface CSFilters {
   q: string;
 }
 
+
 function MultiSelect({
   label,
   options,
@@ -41,7 +42,20 @@ function MultiSelect({
   renderOption?: (v: string) => string;
 }) {
   const [open, setOpen] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredOptions = useMemo(
+    () =>
+      dropdownSearch
+        ? options.filter((o) =>
+            o.toLowerCase().includes(dropdownSearch.toLowerCase())
+          )
+        : options,
+    [options, dropdownSearch]
+  );
+
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -51,9 +65,18 @@ function MultiSelect({
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
+
+  useEffect(() => {
+    if (!open) {
+      setDropdownSearch("");
+    } else {
+      setTimeout(() => searchInputRef.current?.focus(), 0);
+    }
+  }, [open]);
+
   const labelText =
     selected.length === 0
-      ? `All ${label}`
+      ? label
       : selected.length === 1
       ? (renderOption ? renderOption(selected[0]) : selected[0])
       : `${selected.length} selected`;
@@ -70,38 +93,56 @@ function MultiSelect({
         <ChevronDown className={`size-3.5 flex-shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && options.length > 0 && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[160px] w-max max-w-[240px] max-h-64 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
-          {selected.length > 0 && (
-            <button
-              type="button"
-              onClick={onClear}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors border-b border-border"
-            >
-              <X className="size-3" /> Clear {label}
-            </button>
-          )}
-          {options.map((opt) => {
-            const checked = selected.includes(opt);
-            return (
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 min-w-[160px] w-max max-w-[240px] rounded-md border border-border bg-card shadow-lg">
+          {/* in-dropdown search */}
+          <div className="p-1.5 border-b border-border">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search..."
+              value={dropdownSearch}
+              onChange={(e) => setDropdownSearch(e.target.value)}
+              className="w-full text-xs px-2 py-1 rounded border border-border bg-background text-foreground placeholder:text-muted-foreground outline-none focus:border-[#00E273]"
+            />
+          </div>
+
+          <div className="max-h-56 overflow-y-auto">
+            {selected.length > 0 && (
               <button
-                key={opt}
                 type="button"
-                onClick={() => onToggle(opt)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left"
+                onClick={onClear}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-muted transition-colors border-b border-border"
               >
-                <span className={`size-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors ${checked ? "bg-[#00E273] border-[#00E273]" : "border-border bg-background"}`}>
-                  {checked && <Check className="size-2.5 text-black stroke-[3]" />}
-                </span>
-                <span className="truncate">{renderOption ? renderOption(opt) : opt}</span>
+                <X className="size-3" /> Clear {label}
               </button>
-            );
-          })}
+            )}
+            {filteredOptions.length === 0 && (
+              <p className="px-3 py-2 text-xs text-muted-foreground">No results</p>
+            )}
+            {filteredOptions.map((opt) => {
+              const checked = selected.includes(opt);
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => onToggle(opt)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors text-left"
+                >
+                  <span className={`size-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors ${checked ? "bg-[#00E273] border-[#00E273]" : "border-border bg-background"}`}>
+                    {checked && <Check className="size-2.5 text-black stroke-[3]" />}
+                  </span>
+                  <span className="truncate">{renderOption ? renderOption(opt) : opt}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
   );
 }
+
 
 export default function ControlStockFilterBar({
   filters,
@@ -112,10 +153,23 @@ export default function ControlStockFilterBar({
 }) {
   const [searchInput, setSearchInput] = useState(filters.q);
 
-  const { data: opts } = useSWR<CSOptions>("/api/control-stock-filters", fetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 300000,
-  });
+
+  const filterQs = useMemo(() => {
+    const params = new URLSearchParams();
+    if (filters.gender.length) params.set("gender", filters.gender.join(","));
+    if (filters.series.length) params.set("series", filters.series.join(","));
+    if (filters.color.length)  params.set("color",  filters.color.join(","));
+    if (filters.tipe.length)   params.set("tipe",   filters.tipe.join(","));
+    if (filters.tier.length)   params.set("tier",   filters.tier.join(","));
+    if (filters.size.length)   params.set("size",   filters.size.join(","));
+    return params.toString();
+  }, [filters.gender, filters.series, filters.color, filters.tipe, filters.tier, filters.size]);
+
+  const { data: opts } = useSWR<CSOptions>(
+    `/api/control-stock-filters${filterQs ? `?${filterQs}` : ""}`,
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 300000, keepPreviousData: true }
+  );
 
   useEffect(() => {
     setSearchInput(filters.q);
@@ -128,9 +182,12 @@ export default function ControlStockFilterBar({
   };
   const clear = (key: keyof Omit<CSFilters, "q">) => onChange({ ...filters, [key]: [] });
 
+  /* FIX: read value from DOM (e.currentTarget.value) to avoid stale closure */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      onChange({ ...filters, q: searchInput.trim() });
+      const val = e.currentTarget.value.trim();
+      setSearchInput(val);
+      onChange({ ...filters, q: val });
     }
   };
 
@@ -151,28 +208,28 @@ export default function ControlStockFilterBar({
     <div className="flex flex-col gap-2 w-full">
       <div className="flex gap-1.5 items-center w-full">
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Gender" options={opts?.genders || []} selected={filters.gender}
+          <MultiSelect label="GENDER" options={opts?.genders || []} selected={filters.gender}
             onToggle={(v) => toggle("gender", v)} onClear={() => clear("gender")} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Series" options={opts?.series || []} selected={filters.series}
+          <MultiSelect label="SERIES" options={opts?.series || []} selected={filters.series}
             onToggle={(v) => toggle("series", v)} onClear={() => clear("series")} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Color" options={opts?.colors || []} selected={filters.color}
+          <MultiSelect label="COLOR" options={opts?.colors || []} selected={filters.color}
             onToggle={(v) => toggle("color", v)} onClear={() => clear("color")} />
         </div>
         <div className="flex-1 min-w-[90px]">
-          <MultiSelect label="Tipe" options={opts?.tipes || []} selected={filters.tipe}
+          <MultiSelect label="TIPE" options={opts?.tipes || []} selected={filters.tipe}
             onToggle={(v) => toggle("tipe", v)} onClear={() => clear("tipe")} />
         </div>
         <div className="flex-1 min-w-[80px]">
-          <MultiSelect label="Tier" options={opts?.tiers || []} selected={filters.tier}
+          <MultiSelect label="TIER" options={opts?.tiers || []} selected={filters.tier}
             onToggle={(v) => toggle("tier", v)} onClear={() => clear("tier")}
             renderOption={(t) => `T${t}`} />
         </div>
         <div className="flex-1 min-w-[80px]">
-          <MultiSelect label="Size" options={opts?.sizes || []} selected={filters.size}
+          <MultiSelect label="SIZE" options={opts?.sizes || []} selected={filters.size}
             onToggle={(v) => toggle("size", v)} onClear={() => clear("size")} />
         </div>
         {hasFilters && (

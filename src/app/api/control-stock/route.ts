@@ -58,8 +58,9 @@ function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } 
 
   const q = sp.get("q");
   if (q) {
-    conds.push(`kode_besar ILIKE $${i++}`);
+    conds.push(`(kode_besar ILIKE $${i} OR kode_kecil ILIKE $${i})`);
     vals.push(`%${q}%`);
+    i++;
   }
 
   return { clause: conds.length ? "WHERE " + conds.join(" AND ") : "", values: vals };

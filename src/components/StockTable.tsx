@@ -46,7 +46,7 @@ export default function StockTable() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("pairs");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const limit = 20;
+  const limit = 10;
 
   useEffect(() => { setPage(1); }, [filterKey]);
 
