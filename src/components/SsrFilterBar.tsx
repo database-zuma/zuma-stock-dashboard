@@ -14,6 +14,7 @@ interface SsrOptions {
   tipes: string[];
   tiers: string[];
   colors: string[];
+  versions: string[];
 }
 
 export interface SsrFilters {
@@ -28,6 +29,7 @@ export interface SsrFilters {
   tipe: string[];
   tier: string[];
   color: string[];
+  v: string[];
 }
 
 export function getDefaultSsrFilters(): SsrFilters {
@@ -38,7 +40,7 @@ export function getDefaultSsrFilters(): SsrFilters {
     date_to: today.toISOString().split("T")[0],
     group_by: "kode_besar",
     branch: [], store_category: [], nama_gudang: [],
-    gender: [], series: [], tipe: [], tier: [], color: [],
+    gender: [], series: [], tipe: [], tier: [], color: [], v: [],
   };
 }
 
@@ -173,6 +175,7 @@ export default function SsrFilterBar({
     if (filters.tipe.length) p.set("tipe", filters.tipe.join(","));
     if (filters.tier.length) p.set("tier", filters.tier.join(","));
     if (filters.color.length) p.set("color", filters.color.join(","));
+    if (filters.v.length) p.set("v", filters.v.join(","));
     return p.toString();
   }, [filters]);
 
@@ -196,7 +199,7 @@ export default function SsrFilterBar({
 
   const hasFilters = filters.branch.length > 0 || filters.store_category.length > 0 ||
     filters.nama_gudang.length > 0 || filters.gender.length > 0 || filters.series.length > 0 ||
-    filters.tipe.length > 0 || filters.tier.length > 0 || filters.color.length > 0;
+    filters.tipe.length > 0 || filters.tier.length > 0 || filters.color.length > 0 || filters.v.length > 0;
 
   const resetAll = () => onChange({ ...getDefaultSsrFilters(), date_from: filters.date_from, date_to: filters.date_to, group_by: filters.group_by });
 
@@ -265,6 +268,10 @@ export default function SsrFilterBar({
         <div className="flex-1 min-w-[70px]">
           <MultiSelect label="COLOR" options={opts?.colors || []} selected={filters.color}
             onToggle={(v) => toggle("color", v)} onClear={() => clear("color")} onSelectAll={(o) => selectAll("color", o)} />
+        </div>
+        <div className="flex-1 min-w-[70px]">
+          <MultiSelect label="VERSION" options={opts?.versions || []} selected={filters.v}
+            onToggle={(v) => toggle("v", v)} onClear={() => clear("v")} onSelectAll={(o) => selectAll("v", o)} />
         </div>
         {hasFilters && (
           <button type="button" onClick={resetAll}

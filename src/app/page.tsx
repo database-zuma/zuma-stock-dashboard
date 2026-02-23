@@ -41,7 +41,7 @@ type Tab = "overview" | "stock";
 type ControlTab = "charts" | "table" | "table-kodemix";
 
 const DEFAULT_CS: CSFilters = {
-  gender: [], series: [], color: [], tipe: [], tier: [], size: [], q: "",
+  gender: [], series: [], color: [], tipe: [], tier: [], size: [], v: [], q: "",
 };
 
 const NAV_ITEMS: { id: Page; label: string; source: string }[] = [
@@ -79,6 +79,7 @@ function SsrPage({ filters }: { filters: SsrFilters }) {
     if (filters.tipe.length) p.set("tipe", filters.tipe.join(","));
     if (filters.tier.length) p.set("tier", filters.tier.join(","));
     if (filters.color.length) p.set("color", filters.color.join(","));
+    if (filters.v.length) p.set("v", filters.v.join(","));
     return p.toString();
   }, [filters]);
 

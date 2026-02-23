@@ -13,6 +13,7 @@ interface CSOptions {
   tipes: string[];
   tiers: string[];
   sizes: string[];
+  versions: string[];
 }
 
 export interface CSFilters {
@@ -22,6 +23,7 @@ export interface CSFilters {
   tipe: string[];
   tier: string[];
   size: string[];
+  v: string[];
   q: string;
 }
 
@@ -182,8 +184,9 @@ export default function ControlStockFilterBar({
     if (filters.tipe.length)   params.set("tipe",   filters.tipe.join(","));
     if (filters.tier.length)   params.set("tier",   filters.tier.join(","));
     if (filters.size.length)   params.set("size",   filters.size.join(","));
+    if (filters.v.length)    params.set("v",    filters.v.join(","));
     return params.toString();
-  }, [filters.gender, filters.series, filters.color, filters.tipe, filters.tier, filters.size]);
+  }, [filters.gender, filters.series, filters.color, filters.tipe, filters.tier, filters.size, filters.v]);
 
   const { data: opts } = useSWR<CSOptions>(
     `/api/control-stock-filters${filterQs ? `?${filterQs}` : ""}`,
@@ -228,7 +231,7 @@ export default function ControlStockFilterBar({
 
   const resetAll = () => {
     setSearchInput("");
-    onChange({ gender: [], series: [], color: [], tipe: [], tier: [], size: [], q: "" });
+    onChange({ gender: [], series: [], color: [], tipe: [], tier: [], size: [], v: [], q: "" });
   };
 
   const hasFilters =
@@ -261,6 +264,10 @@ export default function ControlStockFilterBar({
         <div className="flex-1 min-w-[80px]">
           <MultiSelect label="SIZE" options={opts?.sizes || []} selected={filters.size}
             onToggle={(v) => toggle("size", v)} onClear={() => clear("size")} onSelectAll={(o) => selectAll("size", o)} />
+        </div>
+        <div className="flex-1 min-w-[80px]">
+          <MultiSelect label="VERSION" options={opts?.versions || []} selected={filters.v}
+            onToggle={(val) => toggle("v", val)} onClear={() => clear("v")} onSelectAll={(o) => selectAll("v", o)} />
         </div>
         {hasFilters && (
           <button

@@ -19,6 +19,7 @@ const DIMS = [
   { key: "tipes",           col: "tipe",            param: "tipe",           nullFilter: "tipe IS NOT NULL AND tipe != ''" },
   { key: "tiers",           col: "tier",            param: "tier",           nullFilter: "tier IS NOT NULL AND tier != ''" },
   { key: "colors",          col: "color",           param: "color",          nullFilter: "color IS NOT NULL AND color != ''" },
+  { key: "versions",        col: "v",              param: "v",              nullFilter: "v IS NOT NULL AND v != ''" },
 ] as const;
 
 export async function GET(req: NextRequest) {

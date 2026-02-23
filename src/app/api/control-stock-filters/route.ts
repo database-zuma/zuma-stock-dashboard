@@ -19,6 +19,7 @@ const DIMS = [
   { key: "tipes",   col: "tipe",   param: "tipe",   nullFilter: "tipe IS NOT NULL AND tipe != ''",     orderBy: "val" },
   { key: "tiers",   col: "tier",   param: "tier",    nullFilter: "tier IS NOT NULL AND tier != ''",     orderBy: "val" },
   { key: "sizes",   col: "size",   param: "size",    nullFilter: "size IS NOT NULL AND size != ''",     orderBy: SIZE_ORDER },
+  { key: "versions", col: "v",    param: "v",      nullFilter: "v IS NOT NULL AND v != ''",     orderBy: "val" },
 ] as const;
 
 export async function GET(req: NextRequest) {

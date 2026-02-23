@@ -16,9 +16,10 @@ interface Options {
   colors: string[];
   tiers: string[];
   sizes: string[];
+  versions: string[];
 }
 
-const FILTER_KEYS = ["category","branch","gudang","gender","series","color","tier","size","q"] as const;
+const FILTER_KEYS = ["category","branch","gudang","gender","series","color","tier","size","v","q"] as const;
 
 
 function MultiSelect({
@@ -284,6 +285,9 @@ export default function FilterBar() {
         </div>
         <div className="flex-1 min-w-[80px]">
           <MultiSelect label="SIZE" paramKey="size" options={opts?.sizes || []} />
+        </div>
+        <div className="flex-1 min-w-[80px]">
+          <MultiSelect label="VERSION" paramKey="v" options={opts?.versions || []} />
         </div>
         {hasFilters && (
           <button

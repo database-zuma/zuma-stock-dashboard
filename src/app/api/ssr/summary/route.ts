@@ -42,6 +42,7 @@ function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[]; d
   addFilter("tipe", parseMulti(sp, "tipe"));
   addFilter("tier", parseMulti(sp, "tier"));
   addFilter("color", parseMulti(sp, "color"));
+  addFilter("v", parseMulti(sp, "v"));
 
   return { clause: conds.length ? "WHERE " + conds.join(" AND ") : "", values: vals, dateFrom, dateTo };
 }

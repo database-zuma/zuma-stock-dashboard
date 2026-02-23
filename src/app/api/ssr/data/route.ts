@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
   addFilter("tipe", parseMulti(sp, "tipe"));
   addFilter("tier", parseMulti(sp, "tier"));
   addFilter("color", parseMulti(sp, "color"));
+  addFilter("v", parseMulti(sp, "v"));
 
   const groupBy = sp.get("group_by") || "kode_besar";
   const g = GROUP_WHITELIST[groupBy] || GROUP_WHITELIST.kode_besar;

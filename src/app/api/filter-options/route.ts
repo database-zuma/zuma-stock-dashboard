@@ -21,6 +21,7 @@ const DIMS = [
   { key: "colors",     col: "group_warna",  param: "color",    nullFilter: "group_warna IS NOT NULL AND group_warna != '' AND group_warna != 'OTHER'", orderBy: "val" },
   { key: "tiers",      col: "tier",         param: "tier",     nullFilter: "tier IS NOT NULL",                                                        orderBy: "val" },
   { key: "sizes",      col: "ukuran",       param: "size",     nullFilter: "ukuran IS NOT NULL AND ukuran != ''",                                      orderBy: SIZE_ORDER },
+  { key: "versions", col: "v",           param: "v",       nullFilter: "v IS NOT NULL AND v != ''",                                                    orderBy: "val" },
 ] as const;
 
 export async function GET(req: NextRequest) {
