@@ -109,6 +109,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (e) {
     console.error("ssr-data error:", e);
-    return NextResponse.json({ rows: [], group_by: groupBy, date_from: dateFrom, date_to: dateTo });
+    return NextResponse.json({ error: "DB error", rows: [], group_by: groupBy, date_from: dateFrom, date_to: dateTo }, { status: 500 });
   }
 }

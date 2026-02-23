@@ -82,11 +82,11 @@ function SsrPage({ filters }: { filters: SsrFilters }) {
     return p.toString();
   }, [filters]);
 
-  const { data: summary } = useSWR<SsrSummary>(
+  const { data: summary, error: summaryError } = useSWR<SsrSummary>(
     `/api/ssr/summary?${ssrQs}`, fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60000, keepPreviousData: true },
   );
-  const { data: chartResp } = useSWR<SsrDataResp>(
+  const { data: chartResp, error: chartError } = useSWR<SsrDataResp>(
     `/api/ssr/data?${ssrQs}`, fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60000, keepPreviousData: true },
   );
@@ -95,6 +95,12 @@ function SsrPage({ filters }: { filters: SsrFilters }) {
 
   return (
     <div className="space-y-6">
+      {/* Error state */}
+      {(summaryError || chartError) && (
+        <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900 p-4 text-sm text-red-600 dark:text-red-400">
+          Failed to load data. Please try again or adjust your filters.
+        </div>
+      )}
       {/* KPI cards */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {summary ? (
@@ -118,7 +124,7 @@ function SsrPage({ filters }: { filters: SsrFilters }) {
               }
             />
             <KPICard
-              title="S/S Ratio" value={Math.round(summary.ratio * 1000) / 10} formatter={(v) => v.toFixed(1) + "%"}
+              title="S/S Ratio" value={Math.round((summary.ratio ?? 0) * 1000) / 10} formatter={(v) => v.toFixed(1) + "%"}
               subtitle="Sales ÷ Stock"
               icon={
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -128,7 +134,7 @@ function SsrPage({ filters }: { filters: SsrFilters }) {
             />
             <KPICard
               title="Stocked Articles" value={summary.stocked_articles} formatter={fmtPairs}
-              subtitle={`${fmtPairs(summary.sold_articles)} with sales`}
+              subtitle={`${summary.sold_articles?.toLocaleString() ?? 0} with sales`}
               icon={
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                   <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
@@ -137,17 +143,26 @@ function SsrPage({ filters }: { filters: SsrFilters }) {
               }
             />
           </>
+        ) : summaryError ? (
+          Array.from({ length: 4 }).map((_, i) => <KPISkeleton key={`ssr-skel-${i}`} />)
         ) : (
           Array.from({ length: 4 }).map((_, i) => <KPISkeleton key={`ssr-skel-${i}`} />)
         )}
       </section>
-
       {/* Pyramid chart */}
       <section className="rounded-xl border border-border bg-card p-4">
         <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
           Stock vs Sales — by {groupLabel}
         </h3>
-        {chartResp?.rows ? <PyramidChart data={chartResp.rows} /> : <PyramidChartSkeleton />}
+        {chartError ? (
+          <div className="w-full h-[300px] flex items-center justify-center text-sm text-muted-foreground">
+            Failed to load chart data
+          </div>
+        ) : chartResp?.rows ? (
+          <PyramidChart data={chartResp.rows} />
+        ) : (
+          <PyramidChartSkeleton />
+        )}
       </section>
     </div>
   );
