@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";
+
+import { Suspense, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import FilterBar from "@/components/FilterBar";
@@ -15,11 +16,13 @@ import ControlStockFilterBar, { type CSFilters } from "@/components/ControlStock
 import ControlStockTable from "@/components/ControlStockTable";
 import ControlStockCharts from "@/components/ControlStockCharts";
 import ControlStockKodemixTable from "@/components/ControlStockKodemixTable";
+import SsrFilterBar, { type SsrFilters, getDefaultSsrFilters } from "@/components/SsrFilterBar";
+import PyramidChart, { PyramidChartSkeleton } from "@/components/PyramidChart";
 import WarehouseTreemap, { WarehouseTreemapSkeleton } from "@/components/WarehouseTreemap";
 import "@/components/ChartSetup";
 import { fmtPairs, fmtRupiah } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
-import { LayoutDashboard, Table2, Menu, ChevronsLeft } from "lucide-react";
+import { LayoutDashboard, Table2, BarChart3, Menu, ChevronsLeft } from "lucide-react";
 
 interface KPIData {
   total_pairs: number;
@@ -33,7 +36,7 @@ interface TipeRow { tipe: string; pairs: number }
 interface TierRow { tier: string; pairs: number; articles: number }
 interface SizeRow { ukuran: string; pairs: number }
 
-type Page = "dashboard" | "control";
+type Page = "dashboard" | "control" | "ssr";
 type Tab = "overview" | "stock";
 type ControlTab = "charts" | "table" | "table-kodemix";
 
@@ -42,9 +45,113 @@ const DEFAULT_CS: CSFilters = {
 };
 
 const NAV_ITEMS: { id: Page; label: string; source: string }[] = [
-  { id: "dashboard", label: "Accurate Stock", source: "core.dashboard_cache" },
-  { id: "control",   label: "Control Stock",   source: "mart.sku_portfolio_size" },
+  { id: "dashboard", label: "Accurate Stock",     source: "core.dashboard_cache" },
+  { id: "control",   label: "Control Stock",       source: "mart.sku_portfolio_size" },
+  { id: "ssr",       label: "Sales Stock Ratio",   source: "mart.sales_stock_ratio" },
 ];
+
+
+/* ── SSR Page sub-component ───────────────────────────── */
+interface SsrSummary {
+  total_stock: number;
+  total_sales: number;
+  total_sales_amount: number;
+  ratio: number;
+  stocked_articles: number;
+  sold_articles: number;
+  date_from: string;
+  date_to: string;
+}
+interface SsrDataRow { group_key: string; label: string; stock: number; sales: number; ratio: number }
+interface SsrDataResp { rows: SsrDataRow[]; group_by: string; date_from: string; date_to: string }
+
+function SsrPage({ filters }: { filters: SsrFilters }) {
+  const ssrQs = useMemo(() => {
+    const p = new URLSearchParams();
+    p.set("date_from", filters.date_from);
+    p.set("date_to", filters.date_to);
+    p.set("group_by", filters.group_by);
+    if (filters.branch.length) p.set("branch", filters.branch.join(","));
+    if (filters.store_category.length) p.set("store_category", filters.store_category.join(","));
+    if (filters.nama_gudang.length) p.set("nama_gudang", filters.nama_gudang.join(","));
+    if (filters.gender.length) p.set("gender", filters.gender.join(","));
+    if (filters.series.length) p.set("series", filters.series.join(","));
+    if (filters.tipe.length) p.set("tipe", filters.tipe.join(","));
+    if (filters.tier.length) p.set("tier", filters.tier.join(","));
+    if (filters.color.length) p.set("color", filters.color.join(","));
+    return p.toString();
+  }, [filters]);
+
+  const { data: summary } = useSWR<SsrSummary>(
+    `/api/ssr/summary?${ssrQs}`, fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60000, keepPreviousData: true },
+  );
+  const { data: chartResp } = useSWR<SsrDataResp>(
+    `/api/ssr/data?${ssrQs}`, fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60000, keepPreviousData: true },
+  );
+
+  const groupLabel = filters.group_by === "kode_besar" ? "Article" : filters.group_by === "nama_gudang" ? "Store" : filters.group_by === "series" ? "Series" : "Branch";
+
+  return (
+    <div className="space-y-6">
+      {/* KPI cards */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {summary ? (
+          <>
+            <KPICard
+              title="Current Stock" value={summary.total_stock} formatter={fmtPairs}
+              subtitle="All filtered locations" accent
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              }
+            />
+            <KPICard
+              title="Period Sales" value={summary.total_sales} formatter={fmtPairs}
+              subtitle={`${summary.date_from} — ${summary.date_to}`}
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              }
+            />
+            <KPICard
+              title="S/S Ratio" value={Math.round(summary.ratio * 1000) / 10} formatter={(v) => v.toFixed(1) + "%"}
+              subtitle="Sales ÷ Stock"
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" /><path d="M8 12h8" /><path d="M12 8v8" />
+                </svg>
+              }
+            />
+            <KPICard
+              title="Stocked Articles" value={summary.stocked_articles} formatter={fmtPairs}
+              subtitle={`${fmtPairs(summary.sold_articles)} with sales`}
+              icon={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+                </svg>
+              }
+            />
+          </>
+        ) : (
+          Array.from({ length: 4 }).map((_, i) => <KPISkeleton key={`ssr-skel-${i}`} />)
+        )}
+      </section>
+
+      {/* Pyramid chart */}
+      <section className="rounded-xl border border-border bg-card p-4">
+        <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
+          Stock vs Sales — by {groupLabel}
+        </h3>
+        {chartResp?.rows ? <PyramidChart data={chartResp.rows} /> : <PyramidChartSkeleton />}
+      </section>
+    </div>
+  );
+}
 
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -55,6 +162,7 @@ function DashboardContent() {
   const [controlTab, setControlTab] = useState<ControlTab>("charts");
   const [mobileNav, setMobileNav] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [ssrFilters, setSsrFilters] = useState<SsrFilters>(getDefaultSsrFilters);
 
   /* ── SWR: dashboard data (only fetched when on dashboard page) ── */
   const { data: dash } = useSWR(
@@ -133,6 +241,8 @@ function DashboardContent() {
                 >
                   {item.id === "dashboard"
                     ? <LayoutDashboard className="size-4" />
+                    : item.id === "ssr"
+                    ? <BarChart3 className="size-4" />
                     : <Table2 className="size-4" />}
                 </span>
                 <span
@@ -180,7 +290,7 @@ function DashboardContent() {
               </button>
               <div>
                 <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                  {activePage === "dashboard" ? "Accurate Stock" : "Control Stock"}
+                  {activePage === "dashboard" ? "Accurate Stock" : activePage === "control" ? "Control Stock" : "Sales Stock Ratio"}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {activePage === "dashboard" ? (
@@ -192,8 +302,10 @@ function DashboardContent() {
                           })
                         : "Loading..."}
                     </>
-                  ) : (
+                  ) : activePage === "control" ? (
                     "mart.sku_portfolio_size"
+                  ) : (
+                    "mart.sales_stock_ratio"
                   )}
                 </p>
               </div>
@@ -203,6 +315,9 @@ function DashboardContent() {
             {activePage === "dashboard" && <FilterBar />}
             {activePage === "control" && (
               <ControlStockFilterBar filters={csFilters} onChange={setCsFilters} />
+            )}
+            {activePage === "ssr" && (
+              <SsrFilterBar filters={ssrFilters} onChange={setSsrFilters} />
             )}
           </div>
 
@@ -361,6 +476,7 @@ function DashboardContent() {
           {activePage === "control" && controlTab === "charts" && <ControlStockCharts filters={csFilters} />}
           {activePage === "control" && controlTab === "table" && <ControlStockTable filters={csFilters} />}
           {activePage === "control" && controlTab === "table-kodemix" && <ControlStockKodemixTable filters={csFilters} />}
+          {activePage === "ssr" && <SsrPage filters={ssrFilters} />}
         </main>
       </div>
     </div>
