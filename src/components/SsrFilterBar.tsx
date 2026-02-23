@@ -32,10 +32,9 @@ export interface SsrFilters {
 
 export function getDefaultSsrFilters(): SsrFilters {
   const today = new Date();
-  const ago = new Date(today);
-  ago.setDate(ago.getDate() - 30);
+  const yearStart = `${today.getFullYear()}-01-01`;
   return {
-    date_from: ago.toISOString().split("T")[0],
+    date_from: yearStart,
     date_to: today.toISOString().split("T")[0],
     group_by: "kode_besar",
     branch: [], store_category: [], nama_gudang: [],
