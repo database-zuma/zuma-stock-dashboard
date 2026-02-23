@@ -155,6 +155,7 @@ const GROUP_OPTIONS = [
   { value: "nama_gudang", label: "Store" },
   { value: "series", label: "Series" },
   { value: "branch", label: "Branch" },
+  { value: "size", label: "Size" },
 ];
 
 export default function SsrFilterBar({

@@ -10,11 +10,12 @@ function parseMulti(sp: URLSearchParams, key: string): string[] {
   return val.split(",").map((v) => v.trim()).filter(Boolean);
 }
 
-const GROUP_WHITELIST: Record<string, { col: string; labelExpr: string }> = {
-  kode_besar:  { col: "kode_besar",  labelExpr: "MAX(COALESCE(NULLIF(article,''), kode_besar))" },
-  nama_gudang: { col: "nama_gudang", labelExpr: "INITCAP(nama_gudang)" },
-  series:      { col: "series",      labelExpr: "series" },
-  branch:      { col: "branch",      labelExpr: "branch" },
+const GROUP_WHITELIST: Record<string, { col: string; groupBy?: string; labelExpr: string; nullFilter?: string }> = {
+  kode_besar:  { col: "kode_besar",  labelExpr: "MAX(COALESCE(NULLIF(product_name,''), kode_besar))" },
+  nama_gudang: { col: "nama_gudang", labelExpr: "INITCAP(nama_gudang)", nullFilter: "nama_gudang IS NOT NULL AND nama_gudang != ''" },
+  series:      { col: "series",      labelExpr: "series", nullFilter: "series IS NOT NULL AND series != ''" },
+  branch:      { col: "branch",      labelExpr: "branch", nullFilter: "branch IS NOT NULL AND branch != ''" },
+  size:        { col: "kode_besar || '|' || COALESCE(size,'')", groupBy: "kode_besar, size", labelExpr: "MAX(COALESCE(NULLIF(product_name,''), kode_besar)) || ' – ' || COALESCE(size, '')", nullFilter: "size IS NOT NULL AND size != ''" },
 };
 
 const SORT_WHITELIST = ["stock", "sales", "ratio"];
@@ -57,9 +58,9 @@ export async function GET(req: NextRequest) {
   const groupBy = sp.get("group_by") || "kode_besar";
   const g = GROUP_WHITELIST[groupBy] || GROUP_WHITELIST.kode_besar;
 
-  // Exclude null group values for non-kode_besar groupings
-  if (g.col !== "kode_besar") {
-    conds.push(`${g.col} IS NOT NULL AND ${g.col} != ''`);
+  // Exclude null group values
+  if (g.nullFilter) {
+    conds.push(g.nullFilter);
   }
 
   const whereStr = conds.length ? "WHERE " + conds.join(" AND ") : "";
@@ -84,7 +85,7 @@ export async function GET(req: NextRequest) {
       ) AS ratio
     FROM mart.sales_stock_ratio
     ${whereStr}
-    GROUP BY ${g.col}
+    GROUP BY ${g.groupBy ?? g.col}
     HAVING SUM(stock_qty) > 0 OR SUM(CASE WHEN transaction_date BETWEEN $${n + 1} AND $${n + 2} THEN sales_qty ELSE 0 END) > 0
     ORDER BY ${sortCol} ${sortDir} NULLS LAST
     LIMIT $${n + 3}
