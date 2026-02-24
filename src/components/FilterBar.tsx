@@ -17,9 +17,10 @@ interface Options {
   tiers: string[];
   sizes: string[];
   versions: string[];
+  entitas: string[];
 }
 
-const FILTER_KEYS = ["category","branch","gudang","gender","series","color","tier","size","v","q"] as const;
+const FILTER_KEYS = ["category","branch","gudang","gender","series","color","tier","size","v","entitas","q"] as const;
 
 
 function MultiSelect({
@@ -260,6 +261,9 @@ export default function FilterBar() {
       <div className="flex gap-1.5 items-center w-full">
         <div className="flex-1 min-w-[90px]">
           <MultiSelect label="RETAIL/WAREHOUSE" paramKey="category" options={opts?.categories || []} />
+        </div>
+        <div className="flex-1 min-w-[80px]">
+          <MultiSelect label="ENTITAS" paramKey="entitas" options={opts?.entitas || []} />
         </div>
         <div className="flex-1 min-w-[90px]">
           <MultiSelect label="BRANCH" paramKey="branch" options={opts?.branches || []} />

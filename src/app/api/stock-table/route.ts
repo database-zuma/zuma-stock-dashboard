@@ -24,6 +24,7 @@ const SORT_WHITELIST: Record<string, string> = {
   nama_gudang: "nama_gudang",
   pairs: "pairs",
   est_rsp_value: "est_rsp_value",
+  source_entity: "source_entity",
 };
 
 function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } {
@@ -54,6 +55,8 @@ function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } 
   addFilter("group_warna",  parseMulti(sp, "color"));
   addFilter("tier",         parseMulti(sp, "tier"));
   addFilter("ukuran",       parseMulti(sp, "size"));
+  addFilter("v",              parseMulti(sp, "v"));
+  addFilter("source_entity",  parseMulti(sp, "entitas"));
 
   const q = sp.get("q");
   if (q) {

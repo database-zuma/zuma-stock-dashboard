@@ -39,6 +39,7 @@ function buildWhere(sp: URLSearchParams): { clause: string; values: unknown[] } 
   addFilter("tier",        parseMulti(sp, "tier"));
   addFilter("ukuran",      parseMulti(sp, "size"));
   addFilter("v",            parseMulti(sp, "v"));
+  addFilter("source_entity", parseMulti(sp, "entitas"));
 
   const q = sp.get("q");
   if (q) {
