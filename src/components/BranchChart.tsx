@@ -10,13 +10,17 @@ interface BranchRow {
   pairs: number;
 }
 
-const GENDER_ORDER = ["Men", "Ladies", "Baby & Kids", "Unknown"];
+const GENDER_ORDER = ["MEN", "LADIES", "BABY", "BOYS", "GIRLS", "JUNIOR", "KIDS", "Unknown"];
 
 const GENDER_COLORS: Record<string, string> = {
-  "Men":         "#00E273",
-  "Ladies":      "#E8266A",
-  "Baby & Kids": "#5D625A",
-  "Unknown":     "#C8C5BE",
+  "MEN":     "#00E273",
+  "LADIES":  "#E8266A",
+  "BABY":    "#FFB347",
+  "BOYS":    "#4A90E2",
+  "GIRLS":   "#FF69B4",
+  "JUNIOR":  "#9B59B6",
+  "KIDS":    "#5D625A",
+  "Unknown": "#C8C5BE",
 };
 
 export default function BranchChart({ data }: { data: BranchRow[] }) {
