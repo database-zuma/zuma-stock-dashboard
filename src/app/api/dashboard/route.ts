@@ -192,7 +192,7 @@ export async function GET(req: NextRequest) {
       })),
     };
     return NextResponse.json(body, {
-      headers: { "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600" },
+      headers: { "Cache-Control": "no-store" },
     });
   } catch (e) {
     console.error("dashboard error:", e);
