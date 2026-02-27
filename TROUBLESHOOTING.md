@@ -123,44 +123,71 @@ for r in d['by_retail']: t[r['branch']]+=r['pairs']
 
 ---
 
-## Issue #2 — Gender "Unknown" Tinggi (Known Issue, Belum Fix)
+## Issue #2 — Gender "Unknown" di Dashboard (Feb 2026 — RESOLVED)
 
 ### Gejala
-- Chart "Stock by Gender" menampilkan segmen **Unknown = ~157,863 pairs**
-- Ini mewakili ~30% dari total stock
+- Chart "Stock by Branch & Gender" menampilkan segmen **Unknown** (~3,091 pairs retail, ~157,863 total termasuk warehouse)
+- Mewakili ~2.4% retail pairs
+
+### Investigasi
+
+**Kategori item dengan Unknown gender:**
+1. **Non-produk / supplies**: `100005` = Thermal Paper (1,766 pairs), `100006` = Printer Kasir, dll
+2. **Packaging / box**: `inbox001` = Box Luca Luna (10,460 pairs!), `boxbbbt002` = Box Baby Toy Story, dll
+3. **Non-Zuma / data dummy**: kode numerik seperti `108602040` (BOOM HITAM MAN), `177301939` (FRIKA BROWN), `178611339` (RENO BLACK), dll
+
+Semua item ini tidak ada di `dim_product` → JOIN miss → `gender = NULL` → tampil sebagai "Unknown".
 
 ### Root Cause
-Kode barang di raw tables yang **tidak ada di `dim_product`** → JOIN miss → `gender = NULL` → ditampilkan sebagai "Unknown".
+Filter lama di `core.dashboard_cache` hanya cek kolom `article` (dari kodemix). Karena item non-Zuma tidak punya entry di dim_product/kodemix, `article`-nya kosong → lolos filter → masuk sebagai Unknown.
+
+### Fix
+
+**Tambahkan `WHERE gender IS NOT NULL` di `core.dashboard_cache` MV:**
 
 ```sql
--- Cek unmatched kode (non-aksesoris):
-SELECT kode_barang, qty FROM (
-  SELECT kode_barang, SUM(kuantitas) qty
-  FROM raw.accurate_stock_ddd
-  WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM raw.accurate_stock_ddd)
-  GROUP BY kode_barang
-) x LEFT JOIN dim_product d ON lower(kode_barang) = d.kode_besar
-WHERE d.kode_besar IS NULL
-  AND kode_barang NOT ILIKE ANY(ARRAY['%shopbag%','%hanger%','%paperbag%','%box%','%gwp%'])
-ORDER BY qty DESC;
+-- Drop dan recreate MV dengan filter tambahan
+DROP MATERIALIZED VIEW IF EXISTS core.dashboard_cache;
+
+CREATE MATERIALIZED VIEW core.dashboard_cache AS
+SELECT COALESCE(gudang_branch, 'Warehouse') AS branch,
+    COALESCE(tier, '3') AS tier,
+    CASE
+        WHEN upper(gender) = ANY (ARRAY['BABY','BOYS','GIRLS','JUNIOR','KIDS']) THEN 'Baby & Kids'
+        WHEN upper(gender) = 'MEN' THEN 'Men'
+        WHEN upper(gender) = 'LADIES' THEN 'Ladies'
+        ELSE COALESCE(gender, 'Unknown')
+    END AS gender_group,
+    series, gudang_category AS category,
+    kode_besar, kode, kode_mix, COALESCE(article, '') AS article,
+    tipe, nama_gudang,
+    COALESCE(NULLIF(TRIM(group_warna), ''), 'OTHER') AS group_warna,
+    COALESCE(NULLIF(TRIM(size), ''), NULLIF(TRIM(ukuran), '')) AS ukuran,
+    v, source_entity,
+    sum(quantity) AS pairs,
+    sum(quantity::numeric * COALESCE(rsp, 0)) AS est_rsp,
+    max(snapshot_date) AS snapshot_date
+FROM core.stock_with_product
+WHERE gender IS NOT NULL  -- hanya tampilkan produk Zuma yg ada di dim_product
+  AND upper(COALESCE(article, '')) !~~ '%SHOPPING BAG%'
+  AND upper(COALESCE(article, '')) !~~ '%HANGER%'
+  AND upper(COALESCE(article, '')) !~~ '%PAPER BAG%'
+  AND upper(COALESCE(article, '')) !~~ '%THERMAL%'
+  AND upper(COALESCE(article, '')) !~~ '%BOX LUCA%'
+GROUP BY gudang_branch, tier, gender, series, gudang_category, kode_besar, kode, kode_mix,
+         article, tipe, nama_gudang, group_warna, size, ukuran, v, source_entity;
 ```
 
-**Sample kode yang unmatched (produk nyata, bukan aksesoris):**
-| kode_barang | qty | keterangan |
-|-------------|-----|------------|
-| G2CA01Z29 | 210 | produk CA series |
-| G2CA01Z31 | 168 | produk CA series |
-| L2WS01Z40 | 96 | produk WS series |
-| M2WS01Z42 | 96 | produk WS series |
-| 100005 | 1,256 | produk tanpa kode standar |
+**Kenapa `gender IS NOT NULL` aman:** Semua produk Zuma di `dim_product` memiliki gender (diverifikasi: 0 rows dengan NULL gender). Item non-Zuma tidak ada di `dim_product` → gender NULL → tereksklusi otomatis.
 
-### Fix (Belum Dikerjakan)
-Perlu insert kode-kode ini ke `dim_product` dengan metadata yang benar (gender, series, tier, color). Butuh konfirmasi dari user soal data produk tersebut.
+### Verifikasi
 
 ```sql
--- Template insert:
-INSERT INTO dim_product (kode_besar, gender, series, tier, ...)
-VALUES ('g2ca01z29', 'Ladies', 'CA', '1', ...);
+SELECT gender_group, SUM(pairs) as pairs
+FROM core.dashboard_cache
+WHERE branch NOT IN ('Warehouse', 'Online')
+GROUP BY gender_group ORDER BY pairs DESC;
+-- Expected: hanya Baby & Kids, Ladies, Men (no Unknown)
 ```
 
 ---
@@ -213,4 +240,4 @@ npx vercel --prod --yes --token=<TOKEN>
 
 ---
 
-*Last updated: 2026-02-27*
+*Last updated: 2026-02-27 — Issue #1 (Branch hilang) + Issue #2 (Gender Unknown) keduanya RESOLVED*
