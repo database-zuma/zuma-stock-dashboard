@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     WITH base AS (SELECT * FROM core.dashboard_cache ${clause}),
     kpis AS (
       SELECT SUM(pairs)                                              AS total_pairs,
-             COUNT(DISTINCT kode_besar)                             AS unique_articles,
+             COUNT(DISTINCT kode_mix)                              AS unique_articles,
              SUM(CASE WHEN tier IN ('4','5') THEN pairs ELSE 0 END) AS dead_stock_pairs,
              SUM(est_rsp)                                           AS est_rsp_value,
              MAX(snapshot_date)                                     AS snapshot_date
@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
       FROM base WHERE tipe IS NOT NULL GROUP BY tipe
     ),
     by_tier AS (
-      SELECT tier, SUM(pairs) AS pairs, COUNT(DISTINCT kode_besar) AS articles
+      SELECT tier, SUM(pairs) AS pairs, COUNT(DISTINCT kode_mix) AS articles
       FROM base GROUP BY tier
     ),
     by_size AS (
