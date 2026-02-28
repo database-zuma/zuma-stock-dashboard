@@ -1,7 +1,7 @@
 "use client";
 
 
-import { Suspense, useState, useMemo, useCallback } from "react";
+import { Suspense, useState, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import FilterBar from "@/components/FilterBar";
@@ -23,6 +23,7 @@ import "@/components/ChartSetup";
 import { fmtPairs, fmtRupiah } from "@/lib/format";
 import { fetcher } from "@/lib/fetcher";
 import { LayoutDashboard, Table2, BarChart3, Menu, ChevronsLeft } from "lucide-react";
+import { useMetisContext } from "@/providers/metis-provider";
 
 interface KPIData {
   total_pairs: number;
@@ -205,6 +206,22 @@ function DashboardContent() {
   const tipeData      = (dash?.by_tipe       as TipeRow[]   | undefined) ?? null;
   const tierData      = (dash?.by_tier       as TierRow[]   | undefined) ?? null;
   const sizeData      = (dash?.by_size       as SizeRow[]   | undefined) ?? null;
+
+  /* ── Metis context sync ───────────────────────────── */
+  const { setDashboardContext } = useMetisContext();
+  useEffect(() => {
+    const filters =
+      activePage === "dashboard"
+        ? Object.fromEntries(searchParams.entries())
+        : activePage === "control"
+        ? (csFilters as unknown as Record<string, unknown>)
+        : (ssrFilters as unknown as Record<string, unknown>);
+    setDashboardContext({
+      activeTab: activePage,
+      filters,
+      visibleData: kpis ? { kpis } : {},
+    });
+  }, [activePage, searchParams, csFilters, ssrFilters, kpis, setDashboardContext]);
 
   /* ── Chart click-to-filter: Dashboard page (URL-based) ── */
   const handleChartFilter = useCallback(

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { MetisProvider } from "@/providers/metis-provider";
+import { MetisWidget } from "@/components/metis/metis-widget";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,8 +22,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" style={{ colorScheme: "light" }}>
+      <head>
+        <style>{`
+          vercel-live-feedback,
+          vercel-toolbar,
+          #__vercel-toolbar-portal,
+          [data-vercel-toolbar] {
+            display: none !important;
+          }
+        `}</style>
+      </head>
       <body className={`${inter.className} bg-background text-foreground antialiased`}>
-        {children}
+        <MetisProvider>
+          {children}
+          <MetisWidget />
+        </MetisProvider>
       </body>
     </html>
   );
