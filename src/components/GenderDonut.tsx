@@ -2,7 +2,7 @@
 
 import "./ChartSetup";
 import { Doughnut } from "react-chartjs-2";
-import { fmtPairs } from "@/lib/format";
+import { fmtPairs, hexToRgba } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface TipeRow {
@@ -15,20 +15,48 @@ const TIPE_COLORS: Record<string, string> = {
   Jepit:   "#1A1A18",
 };
 
-export default function TipeDonut({ data }: { data: TipeRow[] }) {
+const ZUMA_TEAL = "#002A3A";
+
+export default function TipeDonut({
+  data,
+  onSegmentClick,
+  activeValue,
+}: {
+  data: TipeRow[];
+  onSegmentClick?: (label: string) => void;
+  activeValue?: string;
+}) {
   const total = data.reduce((s, d) => s + d.pairs, 0);
+  const labels = data.map((d) => d.tipe);
+  const activeIdx = activeValue ? labels.indexOf(activeValue) : -1;
+
+  const bgColors = data.map((d, i) => {
+    const color = TIPE_COLORS[d.tipe] || "#999999";
+    if (activeIdx >= 0 && i !== activeIdx) return hexToRgba(color, 0.4);
+    return color;
+  });
+
+  const handleClick = onSegmentClick
+    ? (_event: unknown, elements: { index: number }[]) => {
+        if (elements.length > 0) {
+          onSegmentClick(labels[elements[0].index]);
+        }
+      }
+    : undefined;
 
   return (
     <div className="relative flex flex-col items-center" style={{ height: 220 }}>
       <Doughnut
         data={{
-          labels: data.map((d) => d.tipe),
+          labels,
           datasets: [
             {
               data: data.map((d) => d.pairs),
-              backgroundColor: data.map((d) => TIPE_COLORS[d.tipe] || "#999999"),
-              borderWidth: 2,
-              borderColor: "#ffffff",
+              backgroundColor: bgColors,
+              borderWidth: data.map((_, i) => (activeIdx >= 0 && i === activeIdx ? 3 : 2)),
+              borderColor: data.map((_, i) =>
+                activeIdx >= 0 && i === activeIdx ? ZUMA_TEAL : "#ffffff"
+              ),
               hoverOffset: 6,
             },
           ],
@@ -37,6 +65,7 @@ export default function TipeDonut({ data }: { data: TipeRow[] }) {
           responsive: true,
           maintainAspectRatio: false,
           cutout: "68%",
+          onClick: handleClick,
           plugins: {
             legend: {
               position: "bottom",

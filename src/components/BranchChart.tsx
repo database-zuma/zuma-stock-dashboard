@@ -2,6 +2,7 @@
 
 import "./ChartSetup";
 import { Bar } from "react-chartjs-2";
+import { hexToRgba } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface BranchRow {
@@ -23,7 +24,17 @@ const GENDER_COLORS: Record<string, string> = {
   "Unknown": "#C8C5BE",
 };
 
-export default function BranchChart({ data }: { data: BranchRow[] }) {
+const ZUMA_TEAL = "#002A3A";
+
+export default function BranchChart({
+  data,
+  onSegmentClick,
+  activeValue,
+}: {
+  data: BranchRow[];
+  onSegmentClick?: (label: string) => void;
+  activeValue?: string;
+}) {
   const branches = [...new Set(data.map((d) => d.branch))];
 
   const branchTotals = new Map<string, number>();
@@ -31,6 +42,8 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
     branchTotals.set(d.branch, (branchTotals.get(d.branch) || 0) + d.pairs);
   });
   branches.sort((a, b) => (branchTotals.get(b) || 0) - (branchTotals.get(a) || 0));
+
+  const activeIdx = activeValue ? branches.indexOf(activeValue) : -1;
 
   const allGenders = [...new Set(data.map((d) => d.gender_group))];
   const orderedGenders = [
@@ -44,12 +57,30 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
       const row = data.find((d) => d.branch === b && d.gender_group === gender);
       return row ? row.pairs : 0;
     }),
-    backgroundColor: GENDER_COLORS[gender] || "#999999",
+    backgroundColor: branches.map((_, i) => {
+      const color = GENDER_COLORS[gender] || "#999999";
+      if (activeIdx >= 0 && i !== activeIdx) return hexToRgba(color, 0.35);
+      return color;
+    }),
     borderRadius: 3,
     borderSkipped: false as const,
+    borderWidth: branches.map((_, i) =>
+      activeIdx >= 0 && i === activeIdx ? 2 : 0
+    ),
+    borderColor: branches.map((_, i) =>
+      activeIdx >= 0 && i === activeIdx ? ZUMA_TEAL : "transparent"
+    ),
   }));
 
   const chartHeight = Math.max(320, branches.length * 42);
+
+  const handleClick = onSegmentClick
+    ? (_event: unknown, elements: { index: number }[]) => {
+        if (elements.length > 0) {
+          onSegmentClick(branches[elements[0].index]);
+        }
+      }
+    : undefined;
 
   return (
     <div style={{ position: "relative", height: chartHeight }}>
@@ -59,6 +90,7 @@ export default function BranchChart({ data }: { data: BranchRow[] }) {
           indexAxis: "y",
           responsive: true,
           maintainAspectRatio: false,
+          onClick: handleClick,
           plugins: {
             legend: {
               position: "top",

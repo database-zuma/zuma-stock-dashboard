@@ -3,7 +3,7 @@
 import "./ChartSetup";
 import { Bar } from "react-chartjs-2";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fmtPairs } from "@/lib/format";
+import { fmtPairs, hexToRgba } from "@/lib/format";
 
 interface TierRow {
   tier: string;
@@ -22,7 +22,17 @@ const MONO_TIER: Record<string, string> = {
   "8": "#F0EFE9",
 };
 
-export default function TierCompositionChart({ data }: { data: TierRow[] }) {
+const ZUMA_TEAL = "#002A3A";
+
+export default function TierCompositionChart({
+  data,
+  onSegmentClick,
+  activeValue,
+}: {
+  data: TierRow[];
+  onSegmentClick?: (label: string) => void;
+  activeValue?: string;
+}) {
   const total = data.reduce((s, d) => s + d.pairs, 0);
 
   const sorted = TIER_ORDER.map(
@@ -30,25 +40,46 @@ export default function TierCompositionChart({ data }: { data: TierRow[] }) {
   );
 
   const pcts = sorted.map((d) => (total > 0 ? (d.pairs / total) * 100 : 0));
+  const labels = sorted.map((d) => `T${d.tier}`);
+  const activeIdx = activeValue ? labels.indexOf(activeValue) : -1;
+
+  const bgColors = sorted.map((d, i) => {
+    const color = MONO_TIER[d.tier] || "#999999";
+    if (activeIdx >= 0 && i !== activeIdx) return hexToRgba(color, 0.4);
+    return color;
+  });
+
+  const handleClick = onSegmentClick
+    ? (_event: unknown, elements: { index: number }[]) => {
+        if (elements.length > 0) {
+          onSegmentClick(labels[elements[0].index]);
+        }
+      }
+    : undefined;
 
   return (
     <div style={{ position: "relative", height: 220 }}>
       <Bar
         data={{
-          labels: sorted.map((d) => `T${d.tier}`),
+          labels,
           datasets: [
             {
               data: pcts,
-              backgroundColor: sorted.map((d) => MONO_TIER[d.tier] || "#999999"),
+              backgroundColor: bgColors,
               borderRadius: 4,
               borderSkipped: false,
               maxBarThickness: 40,
+              borderWidth: sorted.map((_, i) => (activeIdx >= 0 && i === activeIdx ? 3 : 0)),
+              borderColor: sorted.map((_, i) =>
+                activeIdx >= 0 && i === activeIdx ? ZUMA_TEAL : "transparent"
+              ),
             },
           ],
         }}
         options={{
           responsive: true,
           maintainAspectRatio: false,
+          onClick: handleClick,
           plugins: {
             legend: { display: false },
             tooltip: {

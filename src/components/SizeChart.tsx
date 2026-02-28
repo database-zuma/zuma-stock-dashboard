@@ -3,26 +3,51 @@
 import "./ChartSetup";
 import { Bar } from "react-chartjs-2";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fmtPairs } from "@/lib/format";
+import { fmtPairs, hexToRgba } from "@/lib/format";
 
 interface SizeRow {
   ukuran: string;
   pairs:  number;
 }
 
-export default function SizeChart({ data }: { data: SizeRow[] }) {
+const ZUMA_GREEN = "#00E273";
+const ZUMA_TEAL = "#002A3A";
+
+export default function SizeChart({
+  data,
+  onSegmentClick,
+  activeValue,
+}: {
+  data: SizeRow[];
+  onSegmentClick?: (label: string) => void;
+  activeValue?: string;
+}) {
   // Filter out zero pairs for cleaner chart
   const filtered = data.filter((d) => d.pairs > 0);
+  const labels = filtered.map((d) => d.ukuran);
+  const activeIdx = activeValue ? labels.indexOf(activeValue) : -1;
+
+  const bgColors = activeIdx >= 0
+    ? labels.map((_, i) => (i === activeIdx ? ZUMA_TEAL : hexToRgba(ZUMA_GREEN, 0.4)))
+    : ZUMA_GREEN;
+
+  const handleClick = onSegmentClick
+    ? (_event: unknown, elements: { index: number }[]) => {
+        if (elements.length > 0) {
+          onSegmentClick(labels[elements[0].index]);
+        }
+      }
+    : undefined;
 
   return (
     <div style={{ position: "relative", height: 240 }}>
       <Bar
         data={{
-          labels: filtered.map((d) => d.ukuran),
+          labels,
           datasets: [
             {
               data: filtered.map((d) => d.pairs),
-              backgroundColor: "#00E273",
+              backgroundColor: bgColors,
               borderRadius: 3,
               borderSkipped: false,
               maxBarThickness: 28,
@@ -32,6 +57,7 @@ export default function SizeChart({ data }: { data: SizeRow[] }) {
         options={{
           responsive: true,
           maintainAspectRatio: false,
+          onClick: handleClick,
           plugins: {
             legend: { display: false },
             tooltip: {

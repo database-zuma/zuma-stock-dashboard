@@ -1,8 +1,8 @@
 "use client";
 
 
-import { Suspense, useState, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useState, useMemo, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import FilterBar from "@/components/FilterBar";
 import KPICard, { KPISkeleton } from "@/components/KPICard";
@@ -49,6 +49,17 @@ const NAV_ITEMS: { id: Page; label: string; source: string }[] = [
   { id: "control",   label: "Control Stock",       source: "mart.sku_portfolio_size" },
   { id: "ssr",       label: "Sales Stock Ratio",   source: "mart.sales_stock_ratio" },
 ];
+
+function FilterBadge({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-sm bg-[#00E273]/10 text-[#002A3A] border border-[#00E273]/30 font-medium">
+        🔍 {label}
+        <button type="button" onClick={onClear} className="ml-0.5 hover:text-red-600 transition-colors">✕</button>
+      </span>
+    </div>
+  );
+}
 
 
 /* ── SSR Page sub-component ───────────────────────────── */
@@ -171,6 +182,7 @@ function SsrPage({ filters }: { filters: SsrFilters }) {
 
 function DashboardContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const qs = searchParams.toString();
   const [activePage, setActivePage] = useState<Page>("dashboard");
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -194,6 +206,35 @@ function DashboardContent() {
   const tierData      = (dash?.by_tier       as TierRow[]   | undefined) ?? null;
   const sizeData      = (dash?.by_size       as SizeRow[]   | undefined) ?? null;
 
+  /* ── Chart click-to-filter: Dashboard page (URL-based) ── */
+  const handleChartFilter = useCallback(
+    (param: string, value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const current = params.get(param);
+      if (current === value) {
+        params.delete(param);
+      } else {
+        params.set(param, value);
+      }
+      params.delete("page");
+      router.push(`/?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
+
+  /* ── Chart click-to-filter: Control Stock page (React state) ── */
+  const handleCSChartFilter = useCallback(
+    (param: string, value: string) => {
+      const key = param as keyof Omit<CSFilters, "q">;
+      if (!(key in csFilters) || key === ("q" as any)) return;
+      const current = csFilters[key] as string[];
+      const next = current.length === 1 && current[0] === value
+        ? []
+        : [value];
+      setCsFilters((prev) => ({ ...prev, [key]: next }));
+    },
+    [csFilters]
+  );
   return (
     <div className="min-h-screen bg-background text-foreground flex">
       {/* ── Mobile overlay ────────────────────────────────────── */}
@@ -442,13 +483,23 @@ function DashboardContent() {
                   <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
                     Stock by Branch &amp; Gender
                   </h3>
-                  {retailData ? <BranchChart data={retailData} /> : <BranchChartSkeleton />}
+                  {searchParams.get("branch") && (
+                    <FilterBadge label={searchParams.get("branch")!} onClear={() => handleChartFilter("branch", searchParams.get("branch")!)} />
+                  )}
+                  {retailData ? (
+                    <BranchChart data={retailData} onSegmentClick={(label) => handleChartFilter("branch", label)} activeValue={searchParams.get("branch") || undefined} />
+                  ) : <BranchChartSkeleton />}
                 </div>
                 <div className="rounded-xl border border-border bg-card p-4">
                   <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
                     Stock by Warehouse
                   </h3>
-                  {warehouseData ? <WarehouseTreemap data={warehouseData} /> : <WarehouseTreemapSkeleton />}
+                  {searchParams.get("gudang") && (
+                    <FilterBadge label={searchParams.get("gudang")!} onClear={() => handleChartFilter("gudang", searchParams.get("gudang")!)} />
+                  )}
+                  {warehouseData ? (
+                    <WarehouseTreemap data={warehouseData} onSegmentClick={(label) => handleChartFilter("gudang", label)} activeValue={searchParams.get("gudang") || undefined} />
+                  ) : <WarehouseTreemapSkeleton />}
                 </div>
               </section>
 
@@ -458,13 +509,23 @@ function DashboardContent() {
                   <h3 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wider">
                     Tipe Composition
                   </h3>
-                  {tipeData ? <TipeDonut data={tipeData} /> : <TipeDonutSkeleton />}
+                  {searchParams.get("tipe") && (
+                    <FilterBadge label={searchParams.get("tipe")!} onClear={() => handleChartFilter("tipe", searchParams.get("tipe")!)} />
+                  )}
+                  {tipeData ? (
+                    <TipeDonut data={tipeData} onSegmentClick={(label) => handleChartFilter("tipe", label)} activeValue={searchParams.get("tipe") || undefined} />
+                  ) : <TipeDonutSkeleton />}
                 </div>
                 <div className="rounded-xl border border-border bg-card p-4">
                   <h3 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wider">
                     Tier Distribution
                   </h3>
-                  {tierData ? <TierBar data={tierData} /> : <TierBarSkeleton />}
+                  {searchParams.get("tier") && (
+                    <FilterBadge label={`T${searchParams.get("tier")}`} onClear={() => handleChartFilter("tier", searchParams.get("tier")!)} />
+                  )}
+                  {tierData ? (
+                    <TierBar data={tierData} onSegmentClick={(label) => handleChartFilter("tier", label.replace("T", ""))} activeValue={searchParams.get("tier") ? `T${searchParams.get("tier")}` : undefined} />
+                  ) : <TierBarSkeleton />}
                 </div>
               </section>
 
@@ -473,7 +534,12 @@ function DashboardContent() {
                 <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
                   Size Distribution
                 </h3>
-                {sizeData ? <SizeChart data={sizeData} /> : <SizeChartSkeleton />}
+                {searchParams.get("size") && (
+                  <FilterBadge label={searchParams.get("size")!} onClear={() => handleChartFilter("size", searchParams.get("size")!)} />
+                )}
+                {sizeData ? (
+                  <SizeChart data={sizeData} onSegmentClick={(label) => handleChartFilter("size", label)} activeValue={searchParams.get("size") || undefined} />
+                ) : <SizeChartSkeleton />}
               </section>
 
               {/* Tier Compositions % */}
@@ -481,7 +547,12 @@ function DashboardContent() {
                 <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
                   Tier Compositions %
                 </h3>
-                {tierData ? <TierCompositionChart data={tierData} /> : <TierCompositionSkeleton />}
+                {searchParams.get("tier") && (
+                  <FilterBadge label={`T${searchParams.get("tier")}`} onClear={() => handleChartFilter("tier", searchParams.get("tier")!)} />
+                )}
+                {tierData ? (
+                  <TierCompositionChart data={tierData} onSegmentClick={(label) => handleChartFilter("tier", label.replace("T", ""))} activeValue={searchParams.get("tier") ? `T${searchParams.get("tier")}` : undefined} />
+                ) : <TierCompositionSkeleton />}
               </section>
             </div>
           )}
@@ -489,7 +560,7 @@ function DashboardContent() {
 
           {/* ── Stock Detail ──────────────────────────────────── */}
           {activePage === "dashboard" && activeTab === "stock" && <StockTable />}
-          {activePage === "control" && controlTab === "charts" && <ControlStockCharts filters={csFilters} />}
+          {activePage === "control" && controlTab === "charts" && <ControlStockCharts filters={csFilters} onChartFilter={handleCSChartFilter} />}
           {activePage === "control" && controlTab === "table" && <ControlStockTable filters={csFilters} />}
           {activePage === "control" && controlTab === "table-kodemix" && <ControlStockKodemixTable filters={csFilters} />}
           {activePage === "ssr" && <SsrPage filters={ssrFilters} />}

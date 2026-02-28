@@ -6,6 +6,7 @@ import "./ChartSetup";
 import { Bar, Chart, Doughnut } from "react-chartjs-2";
 import type { CSFilters } from "./ControlStockFilterBar";
 import { fetcher } from "@/lib/fetcher";
+import { hexToRgba } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CSKPIs {
@@ -49,6 +50,7 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 const CHANNEL_COLORS = ["#00E273", "#1A1A18", "#5D625A", "#A9A69F", "#C8C5BE"];
+const ZUMA_TEAL = "#002A3A";
 
 function fmt(n: number) { return n.toLocaleString("id-ID"); }
 
@@ -62,7 +64,24 @@ function KPICard({ title, value, subtitle }: { title: string; value: string; sub
   );
 }
 
-export default function ControlStockCharts({ filters }: { filters: CSFilters }) {
+function FilterBadge({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <div className="flex items-center gap-1.5 mb-2">
+      <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-sm bg-[#00E273]/10 text-[#002A3A] border border-[#00E273]/30 font-medium">
+        🔍 {label}
+        <button type="button" onClick={onClear} className="ml-0.5 hover:text-red-600 transition-colors">✕</button>
+      </span>
+    </div>
+  );
+}
+
+export default function ControlStockCharts({
+  filters,
+  onChartFilter,
+}: {
+  filters: CSFilters;
+  onChartFilter?: (param: string, value: string) => void;
+}) {
   const url = useMemo(() => {
     const params = new URLSearchParams();
     if (filters.gender.length) params.set("gender", filters.gender.join(","));
@@ -107,7 +126,39 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
     (t) => by_tier.find((d) => d.tier === t) || { tier: t, qty: 0, articles: 0 }
   );
 
+  /* ── Active values from filters (for visual feedback) ── */
+  const activeGender = filters.gender.length === 1 ? filters.gender[0] : undefined;
+  const activeTier = filters.tier.length === 1 ? `T${filters.tier[0]}` : undefined;
+  const activeSeries = filters.series.length === 1 ? filters.series[0] : undefined;
 
+  /* ── Click handlers ── */
+  const genderLabels = by_gender.map((g) => g.gender);
+  const genderActiveIdx = activeGender ? genderLabels.indexOf(activeGender) : -1;
+
+  const tierLabels = sortedTier.map((d) => `T${d.tier}`);
+  const tierActiveIdx = activeTier ? tierLabels.indexOf(activeTier) : -1;
+
+  const handleGenderClick = onChartFilter
+    ? (_event: unknown, elements: { index: number }[]) => {
+        if (elements.length > 0) onChartFilter("gender", genderLabels[elements[0].index]);
+      }
+    : undefined;
+
+  const handleTierClick = onChartFilter
+    ? (_event: unknown, elements: { index: number }[]) => {
+        if (elements.length > 0) onChartFilter("tier", sortedTier[elements[0].index].tier);
+      }
+    : undefined;
+
+  const handleSeriesClick = onChartFilter
+    ? (_event: unknown, elements: { index: number }[]) => {
+        if (elements.length > 0) {
+          const chart = (elements[0] as any)?.element?.$context;
+          const rawG = chart?.raw?.g;
+          if (rawG) onChartFilter("series", rawG);
+        }
+      }
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -123,15 +174,24 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
           <h3 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wider">
             Stock by Gender
           </h3>
-          <div className="relative flex flex-col items-center" style={{ height: 220 }}>
+          {activeGender && onChartFilter && (
+            <FilterBadge label={activeGender} onClear={() => onChartFilter("gender", activeGender)} />
+          )}
+          <div className={`relative flex flex-col items-center ${onChartFilter ? "cursor-pointer" : ""}`} style={{ height: 220 }}>
             <Doughnut
               data={{
-                labels: by_gender.map((g) => g.gender),
+                labels: genderLabels,
                 datasets: [{
                   data: by_gender.map((g) => g.qty),
-                  backgroundColor: by_gender.map((g) => GENDER_COLORS[g.gender] || "#999"),
-                  borderWidth: 2,
-                  borderColor: "#ffffff",
+                  backgroundColor: by_gender.map((g, i) => {
+                    const color = GENDER_COLORS[g.gender] || "#999";
+                    if (genderActiveIdx >= 0 && i !== genderActiveIdx) return hexToRgba(color, 0.4);
+                    return color;
+                  }),
+                  borderWidth: by_gender.map((_, i) => (genderActiveIdx >= 0 && i === genderActiveIdx ? 3 : 2)),
+                  borderColor: by_gender.map((_, i) =>
+                    genderActiveIdx >= 0 && i === genderActiveIdx ? ZUMA_TEAL : "#ffffff"
+                  ),
                   hoverOffset: 6,
                 }],
               }}
@@ -139,6 +199,7 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
                 responsive: true,
                 maintainAspectRatio: false,
                 cutout: "68%",
+                onClick: handleGenderClick,
                 plugins: {
                   legend: {
                     position: "bottom",
@@ -173,21 +234,33 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
           <h3 className="font-semibold text-sm mb-2 text-muted-foreground uppercase tracking-wider">
             Tier Distribution
           </h3>
-          <div style={{ position: "relative", height: 220 }}>
+          {activeTier && onChartFilter && (
+            <FilterBadge label={activeTier} onClear={() => onChartFilter("tier", activeTier.replace("T", ""))} />
+          )}
+          <div className={onChartFilter ? "cursor-pointer" : ""} style={{ position: "relative", height: 220 }}>
             <Bar
               data={{
-                labels: sortedTier.map((d) => `T${d.tier}`),
+                labels: tierLabels,
                 datasets: [{
                   data: sortedTier.map((d) => d.qty),
-                  backgroundColor: sortedTier.map((d) => TIER_COLORS[d.tier] || "#999"),
+                  backgroundColor: sortedTier.map((d, i) => {
+                    const color = TIER_COLORS[d.tier] || "#999";
+                    if (tierActiveIdx >= 0 && i !== tierActiveIdx) return hexToRgba(color, 0.4);
+                    return color;
+                  }),
                   borderRadius: 4,
                   borderSkipped: false,
                   maxBarThickness: 40,
+                  borderWidth: sortedTier.map((_, i) => (tierActiveIdx >= 0 && i === tierActiveIdx ? 3 : 0)),
+                  borderColor: sortedTier.map((_, i) =>
+                    tierActiveIdx >= 0 && i === tierActiveIdx ? ZUMA_TEAL : "transparent"
+                  ),
                 }],
               }}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
+                onClick: handleTierClick,
                 plugins: {
                   legend: { display: false },
                   tooltip: {
@@ -221,7 +294,10 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
           <h3 className="font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
             Stock by Series
           </h3>
-          <div style={{ position: "relative", height: 340 }}>
+          {activeSeries && onChartFilter && (
+            <FilterBadge label={activeSeries} onClear={() => onChartFilter("series", activeSeries)} />
+          )}
+          <div className={onChartFilter ? "cursor-pointer" : ""} style={{ position: "relative", height: 340 }}>
             <Chart
               type="treemap"
               data={{
@@ -231,15 +307,30 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
                   groups: ["series"],
                   backgroundColor(ctx: any) {
                     if (ctx.type !== "data") return "transparent";
-                    const total = by_series.reduce((s, r) => s + r.qty, 0);
+                    const g = ctx.raw?.g ?? "";
+                    const seriesTotal = by_series.reduce((s, r) => s + r.qty, 0);
                     const val = ctx.raw?.v ?? 0;
-                    const ratio = total > 0 ? val / total : 0;
+                    const ratio = seriesTotal > 0 ? val / seriesTotal : 0;
                     const minOpacity = 0.25;
                     const opacity = minOpacity + ratio * (1 - minOpacity) * 4;
+
+                    if (activeSeries && g !== activeSeries) {
+                      return hexToRgba("#00E273", Math.min(opacity, 1) * 0.35);
+                    }
                     return `rgba(0, 226, 115, ${Math.min(opacity, 1).toFixed(2)})`;
                   },
-                  borderColor: "#ffffff",
-                  borderWidth: 2,
+                  borderColor(ctx: any) {
+                    if (ctx.type !== "data") return "#ffffff";
+                    const g = ctx.raw?.g ?? "";
+                    if (activeSeries && g === activeSeries) return ZUMA_TEAL;
+                    return "#ffffff";
+                  },
+                  borderWidth(ctx: any) {
+                    if (ctx.type !== "data") return 2;
+                    const g = ctx.raw?.g ?? "";
+                    if (activeSeries && g === activeSeries) return 3;
+                    return 2;
+                  },
                   spacing: 1,
                   labels: {
                     display: true,
@@ -258,6 +349,7 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
+                onClick: handleSeriesClick,
                 plugins: {
                   legend: { display: false },
                   tooltip: {
@@ -271,8 +363,8 @@ export default function ControlStockCharts({ filters }: { filters: CSFilters }) 
                       title: (items: any[]) => items[0]?.raw?.g ?? "",
                       label: (ctx: any) => {
                         const v = ctx.raw?.v ?? 0;
-                        const total = by_series.reduce((s, r) => s + r.qty, 0);
-                        const pct = total > 0 ? ((v / total) * 100).toFixed(1) : "0";
+                        const seriesTotal = by_series.reduce((s, r) => s + r.qty, 0);
+                        const pct = seriesTotal > 0 ? ((v / seriesTotal) * 100).toFixed(1) : "0";
                         return `${fmt(v)} pcs (${pct}%)`;
                       },
                     },
