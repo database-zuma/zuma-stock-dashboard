@@ -216,12 +216,17 @@ function DashboardContent() {
         : activePage === "control"
         ? (csFilters as unknown as Record<string, unknown>)
         : (ssrFilters as unknown as Record<string, unknown>);
+    // Resolve to a specific page+tab label so Metis knows exactly what's visible
+    const contextPage =
+      activePage === "dashboard"
+        ? activeTab === "stock" ? "stock-detail" : "overview"
+        : activePage;
     setDashboardContext({
-      activeTab: activePage,
+      activeTab: contextPage,
       filters,
       visibleData: kpis ? { kpis } : {},
     });
-  }, [activePage, searchParams, csFilters, ssrFilters, kpis, setDashboardContext]);
+  }, [activePage, activeTab, searchParams, csFilters, ssrFilters, kpis, setDashboardContext]);
 
   /* ── Chart click-to-filter: Dashboard page (URL-based) ── */
   const handleChartFilter = useCallback(
