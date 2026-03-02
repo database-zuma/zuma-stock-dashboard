@@ -231,11 +231,48 @@ Ratio = sales / stock. Ratio tinggi = fast-moving/stockout risk. Ratio rendah = 
 6. ⚠️ JIKA ada active filter di atas — GUNAKAN WHERE clause yang sudah disiapkan. JANGAN query tanpa filter itu.
 
 ## Domain Knowledge Zuma
-- 6 branch: Jatim (home base), Jakarta, Sumatra, Sulawesi, Batam, Bali.
-- Gudang fisik: WHS (Surabaya/Jatim), WHJ (Jakarta), WHB (Batam). Selain itu = toko retail.
-- Tier 1=fast moving, Tier 8=new launch (<3 bulan), Tier 4-5=discontinue/dead stock.
+
+### Struktur Produk (5 Level)
+Type (Jepit/Fashion) → Gender (Men/Ladies/Kids/Junior/Boys/Girl/Baby) → Series → Article (warna) → Size
+- **Series utama**: Classic, Slide, Airmove, Wedges, Luna, Luca, Velcro, Stripe, Onyx, Blackseries, Puffy
+- **1 box = 12 pairs** selalu (dengan distribusi size/assortment)
+- Assortment: tiap box ada distribusi size (misal Men Classic: 39(1),40(2),41(2),42(3),43(2),44(2) = 12 pairs)
+- Assortment Status: FULL (semua size ada) vs BROKEN (size tidak lengkap → trigger restock)
+
+### SKU Code System
+- **kode_besar** (kode_produk/kode_barang): kode Accurate per artikel+size+versi. BERUBAH tiap ganti versi produksi.
+- **kode_mix**: kode unified yang MENGGABUNGKAN semua versi (V0-V4) ke 1 kode. PAKAI INI untuk analisis antar waktu.
+- Contoh: Men Classic Jet Black V0→SJ1ACA1, V1→M1CA32, V2→M1CAV201 semua = kode_mix M1CA02CA01
+- ⚠️ Tanpa kode_mix, perbandingan YoY SALAH karena kode_besar beda tiap versi.
+
+### Tier System (Klasifikasi SKU)
+| Tier | Nama | Kriteria |
+|------|------|----------|
+| T1 | Fast Moving | Top 50% sales (Pareto). Prioritas stok tertinggi. |
+| T2 | Secondary Fast | 20% berikutnya di bawah T1. Stok moderat. |
+| T3 | Tertiary | Sisa — bukan fast moving. Stok rendah. |
+| T4 | Discontinue | Produk discontinued / sangat lambat. Clearance mode. |
+| T5 | Dead Stock | Discontinued lama. Hanya di gudang, tidak di toko. Kandidat write-off. |
+| T8 | New Launch | Produk baru (<3 bulan). Setelah 3 bulan → reclassify ke T1/T2/T3. |
 - T1 stok tinggi + sales rendah = distribution bottleneck (bukan demand drop).
-- T4/T5 = kandidat clearance/promo agresif.
-- 1 box = 12 pairs selalu. Dead stock = T4+T5 atau artikel tanpa sales >90 hari.
-- Fill Rate = stok tersedia / target planogram. Fill Accuracy = stok sesuai / total stok.`;
+- T4/T5 = kandidat clearance/promo agresif. Dead stock = T4+T5 atau artikel tanpa sales >90 hari.
+
+### Entitas Bisnis & Gudang
+- **4 entitas (PT)**: DDD (retail stores utama), MBB (online marketplace), UBB (wholesale), LJBB (PO Baby & Kids)
+- **3 gudang fisik**: WHS (Surabaya/Jatim — pusat), WHJ (Jakarta), WHB (Bali). Selain ini = toko retail.
+- Semua entitas share gudang & SKU yang sama, tapi stok terpisah per entitas di Accurate.
+- source_entity di data: DDD=retail, MBB=online, UBB=wholesale.
+
+### Branch & Store Network
+- 6 branch: Jatim (home base, terbanyak toko), Jakarta, Sumatra, Sulawesi, Batam, Bali (termasuk Lombok).
+- Bali & Lombok = area wisata → revenue/toko tinggi secara alami (kontekstual, bukan overperform).
+- Kategori toko: RETAIL (toko permanen), NON-RETAIL (wholesale/consignment), EVENT (temporer: WILBEX, IMBEX).
+- Toko format: Mall unit (island/kiosk di mall) atau Ruko (high-street, terutama Bali).
+- Gender grouping: Men, Ladies, Baby & Kids (Baby/Boys/Girls/Junior = 1 grup).
+
+### Stock & Inventory Metrics
+- Fill Rate = stok tersedia / target planogram. Fill Accuracy = stok sesuai / total stok.
+- Ready Stock = WHS_Stock - Queue - Picked - Delivery - Completed - Custom_Grab + PO_Input
+- Stock status: OUT_OF_STOCK (ready=0), LOW_STOCK (ready=1-2), IN_STOCK (ready≥3).
+- Sell-through rate = qty sold / (stock awal + restock). Turnover = stock / avg monthly sales (bulan).`;
 }
