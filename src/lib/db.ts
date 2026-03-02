@@ -6,13 +6,12 @@ export const pool =
   globalForPg.pool ??
   new Pool({
     connectionString: process.env.DATABASE_URL,
-    max: 10,
-    idleTimeoutMillis: 30000,
+    max: 5,
+    idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 10000,
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPg.pool = pool;
-}
+// Cache pool globally to avoid creating new pools per request
+globalForPg.pool = pool;
 
 export default pool;
