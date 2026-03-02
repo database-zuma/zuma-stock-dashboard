@@ -12,7 +12,6 @@ import TierBar, { TierBarSkeleton } from "@/components/TierBar";
 import SizeChart, { SizeChartSkeleton } from "@/components/SizeChart";
 import TierCompositionChart, { TierCompositionSkeleton } from "@/components/TierCompositionChart";
 import StockTable from "@/components/StockTable";
-import SalesMonthlyTable from "@/components/SalesMonthlyTable";
 import ControlStockFilterBar, { type CSFilters } from "@/components/ControlStockFilterBar";
 import ControlStockTable from "@/components/ControlStockTable";
 import ControlStockCharts from "@/components/ControlStockCharts";
@@ -39,7 +38,7 @@ interface TierRow { tier: string; pairs: number; articles: number }
 interface SizeRow { ukuran: string; pairs: number }
 
 type Page = "dashboard" | "control" | "ssr";
-type Tab = "overview" | "stock" | "monthly";
+type Tab = "overview" | "stock";
 type ControlTab = "charts" | "table" | "table-kodemix";
 
 const DEFAULT_CS: CSFilters = {
@@ -220,7 +219,7 @@ function DashboardContent() {
     // Resolve to a specific page+tab label so Metis knows exactly what's visible
     const contextPage =
       activePage === "dashboard"
-        ? activeTab === "stock" ? "stock-detail" : activeTab === "monthly" ? "monthly" : "overview"
+        ? activeTab === "stock" ? "stock-detail" : "overview"
         : activePage;
     setDashboardContext({
       activeTab: contextPage,
@@ -407,7 +406,6 @@ function DashboardContent() {
               {([
                 ["overview", "Overview"],
                 ["stock",    "Stock Detail"],
-                ["monthly",  "Detail Kode Besar per Month"],
               ] as [Tab, string][]).map(([t, label]) => (
                 <button
                   type="button"
@@ -584,8 +582,6 @@ function DashboardContent() {
 
           {/* ── Stock Detail ──────────────────────────────────── */}
           {activePage === "dashboard" && activeTab === "stock" && <StockTable />}
-          {/* ── Monthly Sales Detail ─────────────────────────── */}
-          {activePage === "dashboard" && activeTab === "monthly" && <SalesMonthlyTable />}
           {activePage === "control" && controlTab === "charts" && <ControlStockCharts filters={csFilters} onChartFilter={handleCSChartFilter} />}
           {activePage === "control" && controlTab === "table" && <ControlStockTable filters={csFilters} />}
           {activePage === "control" && controlTab === "table-kodemix" && <ControlStockKodemixTable filters={csFilters} />}
