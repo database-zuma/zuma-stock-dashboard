@@ -11,11 +11,11 @@ export function MetisContextBar({ filters, activeTab }: MetisContextBarProps) {
   const activeFilters: string[] = [];
 
   // Tab
-  if (activeTab && activeTab !== "summary") {
+  if (activeTab && activeTab !== "overview") {
     const tabLabels: Record<string, string> = {
-      sku: "SKU Chart",
-      detail: "Detail (Kode)",
-      "detail-size": "Detail Size",
+      "stock-detail": "Stock Detail",
+      control: "Control Stock",
+      ssr: "Sales Stock Ratio",
     };
     activeFilters.push(tabLabels[activeTab] || activeTab);
   }
@@ -28,7 +28,7 @@ export function MetisContextBar({ filters, activeTab }: MetisContextBarProps) {
   }
 
   // Other filters
-  const filterKeys = ["branch", "store", "entity", "gender", "series", "color", "tier", "tipe", "version"];
+  const filterKeys = ["branch", "gudang", "entitas", "category", "gender", "series", "color", "tier", "tipe", "v", "size"];
   for (const key of filterKeys) {
     const val = filters[key];
     if (val && Array.isArray(val) && val.length > 0) {
